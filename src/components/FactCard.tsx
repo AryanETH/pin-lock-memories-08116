@@ -154,15 +154,20 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
         animate={{ opacity: 1, y: 0 }}
         className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4"
       >
-        <Card className="relative shadow-2xl border-2 border-white/20 backdrop-blur-xl bg-white/95 dark:bg-black/95">
-          <CardContent className="p-6 space-y-4">
+        <Card className="relative shadow-2xl border-2 border-primary/30 backdrop-blur-xl bg-background/95 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent animate-[slide-in-right_1.5s_ease-in-out_infinite]" />
+          <CardContent className="p-6 space-y-4 relative">
             <div className="flex items-center gap-2">
-              <Skeleton className="h-5 w-5 rounded-full" />
-              <Skeleton className="h-6 w-48" />
+              <div className="w-5 h-5 rounded-full bg-primary/20 animate-pulse" />
+              <div className="h-6 w-48 bg-primary/20 rounded animate-pulse" />
             </div>
-            <Skeleton className="h-40 w-full rounded-lg" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
+            <div className="h-40 w-full bg-primary/10 rounded-lg animate-pulse relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-[slide-in-right_1.5s_ease-in-out_infinite]" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-full bg-primary/20 rounded animate-pulse" />
+              <div className="h-4 w-3/4 bg-primary/20 rounded animate-pulse" />
+            </div>
           </CardContent>
         </Card>
       </motion.div>
@@ -177,8 +182,12 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
       className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4"
+      style={{
+        maxWidth: 'calc(100vw - 2rem)',
+        left: 'clamp(1rem, 50%, calc(100vw - 1rem))',
+      }}
     >
-      <Card className="relative shadow-2xl border-2 border-white/20 backdrop-blur-xl bg-white/95 dark:bg-black/95">
+      <Card className="relative shadow-2xl border-2 border-primary/30 backdrop-blur-xl bg-background/95">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 p-2 rounded-full hover:bg-muted/50 transition-colors z-10"

@@ -279,10 +279,15 @@ export default function Index() {
             variant="secondary"
             size="icon"
             onClick={() => setSavedFactsMenuOpen(true)}
-            className="rounded-full shadow-lg backdrop-blur-xl bg-white/80 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 border border-white/20"
+            className="rounded-full shadow-lg backdrop-blur-xl bg-white/80 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 border border-white/20 relative"
             title="Saved Facts"
           >
             <BookOpen className="w-5 h-5" />
+            {savedFacts.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
+                {savedFacts.length}
+              </span>
+            )}
           </Button>
         </motion.div>
       )}
@@ -536,13 +541,23 @@ export default function Index() {
        )}
 
        {/* Saved Facts Menu */}
-       <SavedFactsMenu
-         isOpen={savedFactsMenuOpen}
-         onClose={() => setSavedFactsMenuOpen(false)}
-         savedFacts={savedFacts}
-         onSelectFact={handleSelectSavedFact}
-         onDeleteFact={deleteSavedFact}
-       />
+      <SavedFactsMenu
+        isOpen={savedFactsMenuOpen}
+        onClose={() => setSavedFactsMenuOpen(false)}
+        savedFacts={savedFacts}
+        onSelectFact={handleSelectSavedFact}
+        onDeleteFact={deleteSavedFact}
+      />
+
+      {/* Fact Card */}
+      {(currentFact || loadingFact) && factMode && (
+        <FactCard
+          fact={currentFact}
+          isLoading={loadingFact}
+          onClose={() => setCurrentFact(null)}
+          onSave={saveFact}
+        />
+      )}
      </div>
    );
  }
