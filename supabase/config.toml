@@ -1,1 +1,7 @@
 project_id = "zivbpgrtdnipznrvkacf"
+
+[functions.get-location-fact]
+verify_jwt = false
+
+[functions.chat-about-place]
+verify_jwt = false

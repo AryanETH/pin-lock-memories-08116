@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { Heart, Share2, Bookmark, MapPin, X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, Share2, Bookmark, MapPin, X, ExternalLink, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import CommentPanel from './CommentPanel';
 
 export interface LocationFact {
   fact: string;
@@ -25,6 +26,7 @@ interface FactCardProps {
 export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardProps) {
   const [stats, setStats] = useState({ likes: 0, shares: 0, saves: 0 });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
     if (!fact) return;
@@ -104,15 +106,18 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
     if (!fact) return;
     
     await updateStats('shares');
-    const shareText = `${fact.placeName}: ${fact.fact}`;
+    const shareUrl = `${window.location.origin}?lat=${fact.coordinates.lat}&lng=${fact.coordinates.lng}`;
+    const shareText = `${fact.placeName}: ${fact.fact}\n\nView location: ${shareUrl}`;
+    
     if (navigator.share) {
       navigator.share({
         title: `Fact about ${fact.placeName}`,
         text: shareText,
+        url: shareUrl,
       }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(shareText);
-      toast.success('Fact copied to clipboard!');
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Location link copied to clipboard!');
     }
   };
 
@@ -131,7 +136,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
 
   const handleKnowMore = () => {
     if (!fact) return;
-    const query = encodeURIComponent(`Information about ${fact.placeName}`);
+    const query = encodeURIComponent(`More information about ${fact.placeName}`);
     window.open(`https://www.google.com/search?q=${query}`, '_blank');
   };
 
@@ -233,23 +238,33 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
           )}
           
           <div className="p-6">
-            <div className="flex items-start gap-2 mb-3">
-              <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-foreground mb-1">
-                  {fact.placeName}
-                </h3>
-                {fact.distance > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {fact.distance.toFixed(1)} km from this place
+            <div className="space-y-3 mb-4">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Place Name:</p>
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <h3 className="text-base font-bold text-foreground">
+                    {fact.placeName}
+                  </h3>
+                </div>
+              </div>
+              
+              {fact.distance > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Distance:</p>
+                  <p className="text-sm text-foreground ml-6">
+                    {fact.distance.toFixed(1)} km
                   </p>
-                )}
+                </div>
+              )}
+              
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Fact:</p>
+                <p className="text-sm text-foreground leading-relaxed ml-6">
+                  {fact.fact}
+                </p>
               </div>
             </div>
-            
-            <p className="text-sm text-foreground leading-relaxed mb-4">
-              {fact.fact}
-            </p>
 
             <Button
               onClick={handleKnowMore}
@@ -261,7 +276,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
               Know More
             </Button>
             
-            <div className="flex items-center gap-2 pt-4 border-t border-border">
+            <div className="flex items-center gap-1 pt-4 border-t border-border">
               <Button
                 variant="ghost"
                 size="sm"
@@ -289,6 +304,15 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
                 <Bookmark className="w-4 h-4 mb-1" />
                 <span className="text-xs">{stats.saves}</span>
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(true)}
+                className="flex-1 flex-col h-auto py-2"
+              >
+                <MessageSquare className="w-4 h-4 mb-1" />
+                <span className="text-xs">Chat</span>
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -296,6 +320,15 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
         {/* Pointing arrow */}
         <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[12px] border-t-white dark:border-t-black" />
       </Card>
+
+      {fact && (
+        <CommentPanel
+          isOpen={showComments}
+          onClose={() => setShowComments(false)}
+          placeName={fact.placeName}
+          placeCoordinates={fact.coordinates}
+        />
+      )}
     </motion.div>
   );
 }
