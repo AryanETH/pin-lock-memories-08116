@@ -270,10 +270,10 @@ export default function Index() {
       {/* Saved Facts Menu Button - Only visible in fact mode */}
       {factMode && (
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
-          className="absolute top-4 left-4 z-10"
+          className="absolute top-20 right-4 z-10"
         >
           <Button
             variant="secondary"
