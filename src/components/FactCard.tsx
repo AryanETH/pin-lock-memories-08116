@@ -30,22 +30,22 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
     if (!fact) return;
 
     const fetchStats = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('location_stats')
         .select('*')
         .eq('lat', fact.coordinates.lat)
         .eq('lng', fact.coordinates.lng)
-        .single();
+        .maybeSingle();
 
       if (data) {
-        setStats({ likes: data.likes, shares: data.shares, saves: data.saves });
+        setStats({ likes: data.likes || 0, shares: data.shares || 0, saves: data.saves || 0 });
       }
     };
 
     fetchStats();
 
     // Subscribe to realtime updates
-    const channel = supabase
+    const channel = (supabase as any)
       .channel(`location_stats:${fact.coordinates.lat}:${fact.coordinates.lng}`)
       .on(
         'postgres_changes',
@@ -75,21 +75,21 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
   const updateStats = async (field: 'likes' | 'shares' | 'saves') => {
     if (!fact) return;
 
-    const { data: existing } = await supabase
+    const { data: existing } = await (supabase as any)
       .from('location_stats')
       .select('*')
       .eq('lat', fact.coordinates.lat)
       .eq('lng', fact.coordinates.lng)
-      .single();
+      .maybeSingle();
 
     if (existing) {
-      await supabase
+      await (supabase as any)
         .from('location_stats')
-        .update({ [field]: existing[field] + 1 })
+        .update({ [field]: (existing[field] || 0) + 1 })
         .eq('lat', fact.coordinates.lat)
         .eq('lng', fact.coordinates.lng);
     } else {
-      await supabase
+      await (supabase as any)
         .from('location_stats')
         .insert({
           lat: fact.coordinates.lat,

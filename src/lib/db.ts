@@ -34,7 +34,7 @@ export interface Pin {
 }
 
 export async function savePin(pin: Pin): Promise<void> {
-  const { error: pinError } = await supabase
+  const { error: pinError } = await (supabase as any)
     .from('pins')
     .insert({
       id: pin.id,
@@ -59,7 +59,7 @@ export async function savePin(pin: Pin): Promise<void> {
       storage_path: file.storagePath,
     }));
 
-    const { error: filesError } = await supabase
+    const { error: filesError} = await (supabase as any)
       .from('files')
       .insert(fileRecords);
 
@@ -68,7 +68,7 @@ export async function savePin(pin: Pin): Promise<void> {
 }
 
 export async function getAllPins(): Promise<Pin[]> {
-  const { data: pinsData, error: pinsError } = await supabase
+  const { data: pinsData, error: pinsError } = await (supabase as any)
     .from('pins')
     .select('*');
 
@@ -76,14 +76,14 @@ export async function getAllPins(): Promise<Pin[]> {
   if (!pinsData) return [];
 
   // Fetch files for all pins
-  const pinIds = pinsData.map(p => p.id);
-  const { data: filesData } = await supabase
+  const pinIds = pinsData.map((p: any) => p.id);
+  const { data: filesData } = await (supabase as any)
     .from('files')
     .select('*')
     .in('pin_id', pinIds);
 
   // Convert to Pin format
-  return pinsData.map(p => ({
+  return pinsData.map((p: any) => ({
     id: p.id,
     lat: p.lat,
     lng: p.lng,
@@ -96,8 +96,8 @@ export async function getAllPins(): Promise<Pin[]> {
     updatedAt: new Date(p.updated_at).getTime(),
     radius: p.radius,
     files: (filesData || [])
-      .filter(f => f.pin_id === p.id)
-      .map(f => ({
+      .filter((f: any) => f.pin_id === p.id)
+      .map((f: any) => ({
         id: f.id,
         name: f.name,
         type: f.type as 'image' | 'video' | 'audio' | 'document',
@@ -111,7 +111,7 @@ export async function getAllPins(): Promise<Pin[]> {
 
 export async function deletePin(id: string): Promise<void> {
   // Files will be cascade deleted by database
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('pins')
     .delete()
     .eq('id', id);
@@ -120,7 +120,7 @@ export async function deletePin(id: string): Promise<void> {
 }
 
 export async function getPinById(id: string): Promise<Pin | undefined> {
-  const { data: pinData, error: pinError } = await supabase
+  const { data: pinData, error: pinError } = await (supabase as any)
     .from('pins')
     .select('*')
     .eq('id', id)
@@ -129,7 +129,7 @@ export async function getPinById(id: string): Promise<Pin | undefined> {
   if (pinError) throw pinError;
   if (!pinData) return undefined;
 
-  const { data: filesData } = await supabase
+  const { data: filesData } = await (supabase as any)
     .from('files')
     .select('*')
     .eq('pin_id', id);
@@ -146,7 +146,7 @@ export async function getPinById(id: string): Promise<Pin | undefined> {
     createdAt: new Date(pinData.created_at).getTime(),
     updatedAt: new Date(pinData.updated_at).getTime(),
     radius: pinData.radius,
-    files: (filesData || []).map(f => ({
+    files: (filesData || []).map((f: any) => ({
       id: f.id,
       name: f.name,
       type: f.type as 'image' | 'video' | 'audio' | 'document',
@@ -166,7 +166,7 @@ export async function updatePin(id: string, updates: Partial<Pin>): Promise<void
   if (updates.shareToken !== undefined) updateData.share_token = updates.shareToken;
   if (updates.radius !== undefined) updateData.radius = updates.radius;
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('pins')
     .update(updateData)
     .eq('id', id);
@@ -175,7 +175,7 @@ export async function updatePin(id: string, updates: Partial<Pin>): Promise<void
 }
 
 export async function getPinByShareToken(token: string): Promise<Pin | undefined> {
-  const { data: pinData, error: pinError } = await supabase
+  const { data: pinData, error: pinError } = await (supabase as any)
     .from('pins')
     .select('*')
     .eq('share_token', token)
@@ -184,7 +184,7 @@ export async function getPinByShareToken(token: string): Promise<Pin | undefined
   if (pinError) throw pinError;
   if (!pinData) return undefined;
 
-  const { data: filesData } = await supabase
+  const { data: filesData } = await (supabase as any)
     .from('files')
     .select('*')
     .eq('pin_id', pinData.id);
@@ -201,7 +201,7 @@ export async function getPinByShareToken(token: string): Promise<Pin | undefined
     createdAt: new Date(pinData.created_at).getTime(),
     updatedAt: new Date(pinData.updated_at).getTime(),
     radius: pinData.radius,
-    files: (filesData || []).map(f => ({
+    files: (filesData || []).map((f: any) => ({
       id: f.id,
       name: f.name,
       type: f.type as 'image' | 'video' | 'audio' | 'document',
