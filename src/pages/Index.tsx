@@ -97,7 +97,7 @@ export default function Index() {
     }
   }, [pins]);
 
-  const handleUrlParams = () => {
+  const handleUrlParams = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const lat = urlParams.get('lat');
     const lng = urlParams.get('lng');
@@ -111,6 +111,24 @@ export default function Index() {
       
       // Set the shared location for the modal
       setSharedLocation({ lat: latNum, lng: lngNum, zoom: zoomNum });
+      // Center map if available
+      if (mapRef.current) {
+        mapRef.current.setView([latNum, lngNum], zoomNum);
+      }
+      // Auto-fetch and display relevant information
+      setLoadingFact(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('get-location-fact', {
+          body: { lat: latNum, lng: lngNum }
+        });
+        if (!error) {
+          setCurrentFact(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch fact from shared link:', e);
+      } finally {
+        setLoadingFact(false);
+      }
       
       // If there's a pinId, try to find and open that pin
       if (pinId) {
@@ -268,29 +286,7 @@ export default function Index() {
   return (
     <div className="relative h-screen w-full overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
       {/* Saved Facts Menu Button - Only visible in fact mode */}
-      {factMode && (
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="absolute top-20 right-4 z-10"
-        >
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={() => setSavedFactsMenuOpen(true)}
-            className="rounded-full shadow-lg backdrop-blur-xl bg-white/80 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 border border-white/20 relative"
-            title="Saved Facts"
-          >
-            <BookOpen className="w-5 h-5" />
-            {savedFacts.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
-                {savedFacts.length}
-              </span>
-            )}
-          </Button>
-        </motion.div>
-      )}
+      {/* Saved Facts Menu toggle moved to header; removed floating button */}
 
       {/* Header Bar */}
       <motion.header
@@ -340,8 +336,10 @@ export default function Index() {
               variant={factMode ? 'default' : 'ghost'}
               size="icon"
               onClick={() => {
-                setFactMode(!factMode);
+                const next = !factMode;
+                setFactMode(next);
                 setCurrentFact(null);
+                if (!next) setSavedFactsMenuOpen(false);
                 toast.success(factMode ? 'Lock Memory Mode Activated' : 'Fact Mode Activated 📖');
               }}
               className="rounded-full"
@@ -349,6 +347,22 @@ export default function Index() {
             >
               {factMode ? <Lock className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
             </Button>
+            {factMode && (
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={() => setSavedFactsMenuOpen(true)}
+                className="rounded-full shadow-lg backdrop-blur-xl bg-white/80 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 border border-white/20 relative"
+                title="Saved Facts"
+              >
+                <BookOpen className="w-5 h-5" />
+                {savedFacts.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
+                    {savedFacts.length}
+                  </span>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </motion.header>
@@ -527,18 +541,18 @@ export default function Index() {
          </div>
        )}
 
-       {/* Fact Card */}
-       {(loadingFact || currentFact) && (
-         <FactCard
-           fact={currentFact}
-           isLoading={loadingFact}
-           onClose={() => {
-             setCurrentFact(null);
-             setLoadingFact(false);
-           }}
-           onSave={saveFact}
-         />
-       )}
+      {/* Fact Card */}
+      {(loadingFact || currentFact) && (
+        <FactCard
+          fact={currentFact}
+          isLoading={loadingFact}
+          onClose={() => {
+            setCurrentFact(null);
+            setLoadingFact(false);
+          }}
+          onSave={saveFact}
+        />
+      )}
 
        {/* Saved Facts Menu */}
       <SavedFactsMenu
@@ -548,16 +562,7 @@ export default function Index() {
         onSelectFact={handleSelectSavedFact}
         onDeleteFact={deleteSavedFact}
       />
-
-      {/* Fact Card */}
-      {(currentFact || loadingFact) && factMode && (
-        <FactCard
-          fact={currentFact}
-          isLoading={loadingFact}
-          onClose={() => setCurrentFact(null)}
-          onSave={saveFact}
-        />
-      )}
+     
      </div>
    );
  }

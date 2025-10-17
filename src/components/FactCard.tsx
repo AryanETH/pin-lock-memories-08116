@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Heart, Share2, Bookmark, MapPin, X, ExternalLink, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { Heart, Share2, Bookmark, X, ExternalLink, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,6 +27,27 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
   const [stats, setStats] = useState({ likes: 0, shares: 0, saves: 0 });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
+
+  // Preconnect to Google to speed up "Know More"
+  useEffect(() => {
+    const preconnects = [
+      { rel: 'preconnect', href: 'https://www.google.com' },
+      { rel: 'dns-prefetch', href: 'https://www.google.com' },
+    ];
+    const els: HTMLLinkElement[] = [];
+    preconnects.forEach(({ rel, href }) => {
+      const el = document.createElement('link');
+      el.rel = rel;
+      el.href = href;
+      document.head.appendChild(el);
+      els.push(el);
+    });
+    return () => {
+      els.forEach((el) => {
+        try { document.head.removeChild(el); } catch {}
+      });
+    };
+  }, [fact?.placeName]);
 
   useEffect(() => {
     if (!fact) return;
@@ -238,32 +259,16 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
           )}
           
           <div className="p-6">
-            <div className="space-y-3 mb-4">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-1">Place Name:</p>
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <h3 className="text-base font-bold text-foreground">
-                    {fact.placeName}
-                  </h3>
-                </div>
-              </div>
-              
-              {fact.distance > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-1">Distance:</p>
-                  <p className="text-sm text-foreground ml-6">
-                    {fact.distance.toFixed(1)} km
-                  </p>
-                </div>
-              )}
-              
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-1">Fact:</p>
-                <p className="text-sm text-foreground leading-relaxed ml-6">
-                  {fact.fact}
-                </p>
-              </div>
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-foreground">
+                <span className="font-bold">Place Name:</span> {fact.placeName}
+              </p>
+              <p className="text-sm text-foreground">
+                <span className="font-bold">Distance:</span> {Math.round(fact.distance)} km
+              </p>
+              <p className="text-sm text-foreground leading-relaxed">
+                <span className="font-bold">Fact:</span> {fact.fact}
+              </p>
             </div>
 
             <Button

@@ -64,25 +64,34 @@ serve(async (req) => {
       };
     }
 
-    // Fetch real images using Unsplash API
+    // Fetch images using Unsplash API with prioritized fallbacks
     console.log('Fetching images for:', parsedFact.placeName);
-    const unsplashResponse = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(parsedFact.placeName)}&per_page=3&orientation=landscape`,
-      {
-        headers: {
-          'Authorization': `Client-ID ${Deno.env.get('UNSPLASH_ACCESS_KEY') || 'your-unsplash-key'}`
-        }
-      }
-    );
+    const unsplashKey = Deno.env.get('UNSPLASH_ACCESS_KEY') || 'your-unsplash-key';
+    const headers = { 'Authorization': `Client-ID ${unsplashKey}` };
+    const queries = [
+      parsedFact.placeName,                                 // 1) Exact match
+      `${parsedFact.placeName} related`,                    // 2) Related photos
+      `${parsedFact.placeName} landmark OR scenery OR city` // 3) Relevant photos
+    ];
 
-    let imageUrls: string[] = [];
-    if (unsplashResponse.ok) {
-      const unsplashData = await unsplashResponse.json();
-      imageUrls = unsplashData.results?.slice(0, 3).map((img: any) => img.urls.regular) || [];
-      console.log('Found images:', imageUrls.length);
-    } else {
-      console.log('Unsplash API failed, using fallback');
+    const imageUrlSet = new Set<string>();
+    for (const q of queries) {
+      try {
+        const res = await fetch(
+          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=6&orientation=landscape`,
+          { headers }
+        );
+        if (!res.ok) continue;
+        const data = await res.json();
+        const urls: string[] = (data.results || []).map((img: any) => img.urls?.regular).filter(Boolean);
+        urls.forEach(u => imageUrlSet.add(u));
+        if (imageUrlSet.size >= 3) break;
+      } catch (e) {
+        console.warn('Unsplash fetch failed for query', q, e);
+      }
     }
+
+    const imageUrls: string[] = Array.from(imageUrlSet).slice(0, 3);
 
     return new Response(
       JSON.stringify({
