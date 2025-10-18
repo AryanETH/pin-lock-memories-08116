@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* External font for landing page */
+@import url('https://fonts.cdnfonts.com/css/basis33');
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -97,6 +100,12 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Landing page font utility */
+  .landing-font {
+    font-family: 'Basis33', 'Basis 33', system-ui, sans-serif !important;
+    letter-spacing: 0.12em;
   }
 
   /* Leaflet map styles */

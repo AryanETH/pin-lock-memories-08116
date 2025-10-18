@@ -42,6 +42,7 @@ export default function Index() {
   const [loadingFact, setLoadingFact] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [anchorCoords, setAnchorCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentLandingCity, setCurrentLandingCity] = useState<{ name: string; lat: number; lon: number } | null>(null);
  
   // No separate route; landing toggles to map view
   
@@ -285,6 +286,37 @@ export default function Index() {
     }
   };
 
+  const diveIntoCurrentCity = async () => {
+    // Transition to Fact Mode and focus on the currently displayed landing city
+    setShowLanding(false);
+    setFactMode(true);
+    const target = currentLandingCity;
+    if (!target) return;
+    const lat = target.lat;
+    const lng = target.lon;
+    setAnchorCoords({ lat, lng });
+    // Allow map to mount
+    setTimeout(async () => {
+      if (mapRef.current) {
+        mapRef.current.setView([lat, lng], 15);
+      }
+      setLoadingFact(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('get-location-fact', {
+          body: { lat, lng }
+        });
+        if (!error) {
+          setCurrentFact(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch fact for landing city:', e);
+        toast.error('Failed to load fact for this city');
+      } finally {
+        setLoadingFact(false);
+      }
+    }, 120);
+  };
+
   const handleDeletePin = async (pin: Pin) => {
     try {
       await deletePin(pin.id);
@@ -389,17 +421,18 @@ export default function Index() {
       {showLanding ? (
         <div className="absolute inset-0 bg-black">
           {/* 3D Globe */}
-          <Globe />
+          <Globe
+            onCityChange={(name, lat, lon) => setCurrentLandingCity({ name, lat, lon })}
+          />
 
           {/* Overlays */}
           <div className="absolute top-4 left-4 z-20 flex items-center gap-2 select-none">
-            <img src={mapxLogo} alt="Mapx" className="w-8 h-8 object-contain drop-shadow invert" />
-            <span className="text-white/95 tracking-[0.35em] font-medium" style={{ textShadow: '0 0 10px rgba(79,195,247,0.45)' }}>MAPX</span>
+            <img src={mapxLogo} alt="Logo" className="w-9 h-9 object-contain drop-shadow invert" />
           </div>
 
           <button
-            onClick={() => setShowLanding(false)}
-            className="absolute top-6 right-6 z-20 text-white/95 tracking-[0.25em] hover:scale-[1.04] transition-transform select-none"
+            onClick={diveIntoCurrentCity}
+            className="landing-font absolute top-6 right-6 z-20 text-white/95 tracking-[0.15em] hover:scale-[1.04] transition-transform select-none"
             style={{ textShadow: '0 0 16px rgba(79,195,247,0.55)' }}
           >
             DIVE IN →
