@@ -388,6 +388,18 @@ export default function Index() {
       {/* Landing or Map */}
       {showLanding ? (
         <div className="absolute inset-0 pt-28 px-6 md:px-10 flex flex-col items-center gap-8">
+          {/* Landing overlay UI */}
+          <div className="absolute top-4 left-4 z-20 flex items-center gap-2 select-none">
+            <img src={mapxLogo} alt="Mapx" className="w-7 h-7 object-contain drop-shadow dark:invert" />
+            <span className="text-white/90 tracking-widest font-medium" style={{ textShadow: '0 0 10px rgba(79,195,247,0.5)' }}>MAPX</span>
+          </div>
+          <button
+            onClick={() => setShowLanding(false)}
+            className="absolute top-6 right-6 z-20 text-white/90 tracking-[0.2em] hover:scale-105 transition-transform select-none"
+            style={{ textShadow: '0 0 16px rgba(79,195,247,0.5)' }}
+          >
+            DIVE IN →
+          </button>
           {/* Search */}
           <div className="z-10">
             <SearchBar onSelectLocation={handleSearchSelect} />
@@ -398,6 +410,10 @@ export default function Index() {
           </div>
           {/* Subtext */}
           <p className="text-sm text-muted-foreground">Drag to rotate. Releases resume auto-rotation. Day/night shading with subtle glow.</p>
+          {/* Footer caption */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 tracking-widest text-xs select-none" style={{ textShadow: '0 0 12px rgba(255,255,255,0.25)' }}>
+            ♡ FROM ARYAN PATIL
+          </div>
         </div>
       ) : (
         <div className="absolute inset-0 pt-24 pb-8 px-6 md:px-8 flex items-center justify-center">

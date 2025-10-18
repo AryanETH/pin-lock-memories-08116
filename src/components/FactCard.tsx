@@ -24,7 +24,15 @@ interface FactCardProps {
   // When provided, render the card anchored to these pixel coordinates
   // within a positioned container (e.g., map overlay). Coordinates are
   // expected to be relative to that container's top-left.
-  anchor?: { x: number; y: number } | null;
+  anchor?:
+    | null
+    | {
+        x: number;
+        y: number;
+        zoom: number;
+        containerWidth: number;
+        containerHeight: number;
+      };
 }
 
 export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: FactCardProps) {
@@ -209,6 +217,34 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
   // Anchored (inside a map overlay) vs fixed (global)
   const isAnchored = !!anchor;
 
+  // Compute responsive width based on zoom and container size.
+  // Keeps the card readable but inside the map viewport.
+  const computedStyles: React.CSSProperties | undefined = isAnchored
+    ? (() => {
+        const zoom = (anchor as any).zoom as number;
+        const cw = (anchor as any).containerWidth as number;
+        const ch = (anchor as any).containerHeight as number;
+
+        // Desired width scales with zoom but clamped to container bounds
+        const baseWidth = 420; // px at typical zoom ~13-15
+        const scale = Math.max(0.7, Math.min(1.25, zoom / 14));
+        const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.9));
+
+        // Keep card fully inside container using translate clamping
+        const left = Math.min(Math.max(anchor!.x, width * 0.5 + 8), cw - width * 0.5 - 8);
+        // Vertical placement above the anchor with margin; clamp to top
+        const desiredTop = anchor!.y - 16; // top reference for transform
+        const top = Math.max(16 + 8, Math.min(desiredTop, ch - 16));
+
+        return {
+          width,
+          left: `${left}px`,
+          top: `${top}px`,
+          transform: 'translate(-50%, calc(-100%))',
+        } as React.CSSProperties;
+      })()
+    : undefined;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: isAnchored ? 10 : 50 }}
@@ -216,21 +252,10 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
       exit={{ opacity: 0, y: isAnchored ? 10 : 50 }}
       className={
         isAnchored
-          ? 'absolute z-[1001] w-[min(92vw,420px)] px-2 pointer-events-auto'
+          ? 'absolute z-[1001] px-2 pointer-events-auto'
           : 'fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4'
       }
-      style={
-        isAnchored
-          ? {
-              left: `${anchor!.x}px`,
-              top: `${anchor!.y}px`,
-              transform: 'translate(-50%, calc(-100% - 16px))', // above the anchor, with small gap
-            }
-          : {
-              maxWidth: 'calc(100vw - 2rem)',
-              left: 'clamp(1rem, 50%, calc(100vw - 1rem))',
-            }
-      }
+      style={isAnchored ? computedStyles : { maxWidth: 'calc(100vw - 2rem)', left: 'clamp(1rem, 50%, calc(100vw - 1rem))' }}
     >
       <Card className="relative shadow-2xl border-2 border-primary/30 backdrop-blur-xl bg-background/95">
         <button
