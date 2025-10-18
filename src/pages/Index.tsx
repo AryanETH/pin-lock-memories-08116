@@ -18,7 +18,7 @@ import { calculateDistance, getCurrentPosition } from '@/lib/geo';
 import { toast } from 'sonner';
 import { Map as LeafletMap } from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
-import { cities } from '@/lib/cities';
+ 
 
 export default function Index() {
   const { theme, toggleTheme } = useTheme();
@@ -42,8 +42,7 @@ export default function Index() {
   const [loadingFact, setLoadingFact] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [anchorCoords, setAnchorCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [currentCity, setCurrentCity] = useState('MUMBAI..');
-  const [typingIndex, setTypingIndex] = useState(0);
+ 
   // No separate route; landing toggles to map view
   
   // Local private pins cache (for devices without auth)
@@ -70,39 +69,6 @@ export default function Index() {
     loadPins();
     getUserLocation();
     loadSavedFacts();
-    
-    // Shuffle cities initially
-    const shuffledCities = [...cities].sort(() => Math.random() - 0.5);
-    let cityIndex = 0;
-    
-    const typeCityName = (text: string, callback: () => void) => {
-      let i = 0;
-      setCurrentCity('');
-      const interval = setInterval(() => {
-        setCurrentCity(text.substring(0, i) + '..');
-        i++;
-        if (i > text.length) {
-          clearInterval(interval);
-          setTimeout(callback, 1000);
-        }
-      }, 80);
-    };
-    
-    const showNextCity = () => {
-      if (cityIndex >= shuffledCities.length) cityIndex = 0;
-      const cityName = shuffledCities[cityIndex].name;
-      
-      // Trigger globe to show city
-      if ((window as any).showCity) {
-        (window as any).showCity(cityName);
-      }
-      
-      typeCityName(cityName, showNextCity);
-      cityIndex++;
-    };
-    
-    // Start the city cycle
-    setTimeout(showNextCity, 500);
   }, []);
 
   const loadSavedFacts = () => {
@@ -423,7 +389,7 @@ export default function Index() {
       {showLanding ? (
         <div className="absolute inset-0 bg-black">
           {/* 3D Globe */}
-          <Globe className="absolute inset-0 w-full h-full" />
+          <Globe />
 
           {/* Overlays */}
           <div className="absolute top-4 left-4 z-20 flex items-center gap-2 select-none">
@@ -439,17 +405,7 @@ export default function Index() {
             DIVE IN →
           </button>
 
-          {/* City label with typing animation */}
-          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 select-none">
-            <span className="text-white/95 uppercase font-mono tracking-[0.35em] text-2xl" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>
-              {currentCity}
-            </span>
-          </div>
-
-          {/* Bottom caption */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 text-white/85 tracking-[0.35em] text-sm select-none" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>
-            ♡ CRAFTED BY ARYAN PATIL
-          </div>
+          
         </div>
       ) : (
         <div className="absolute inset-0 pt-24 pb-8 px-6 md:px-8 flex items-center justify-center">
