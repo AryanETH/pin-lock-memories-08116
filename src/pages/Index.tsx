@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Moon, Sun, Eye, Lock, Share2, Map as MapIcon, BookOpen } from 'lucide-react';
 import SimpleMap from '@/components/SimpleMap';
+import Globe from '@/components/Globe';
 import mapxLogo from '@/assets/mapx-logo.png';
 import CreatePinModal from '@/components/CreatePinModal';
 import UnlockPinModal from '@/components/UnlockPinModal';
@@ -384,42 +385,49 @@ export default function Index() {
 
       {/* Landing or Map */}
       {showLanding ? (
-        <div className="absolute inset-0">
-          {/* Cinematic half-earth looping video */}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,#0B0F18_0%,#1A2235_100%)]"></div>
-          <video
-            className="absolute inset-0 w-[140%] h-[140%] object-cover object-[80%_60%] scale-110"
-            autoPlay
-            muted
-            playsInline
-            loop
-            poster="https://images.pexels.com/photos/87009/earth-blue-planet-globe-planet-87009.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1200&w=1600"
-          >
-            <source src="https://cdn.coverr.co/videos/coverr-earth-planet-9090/1080p.mp4" type="video/mp4" />
-            <source src="https://cdn.coverr.co/videos/coverr-earth-planet-9090/720p.mp4" type="video/mp4" />
-          </video>
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Starfield background */}
+          <div className="absolute inset-0 bg-[#0B0F18]">
+            {/* Animated stars */}
+            {Array.from({ length: 150 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-[2px] h-[2px] bg-white rounded-full animate-pulse"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  opacity: Math.random() * 0.7 + 0.3,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${Math.random() * 2 + 1}s`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* 3D Globe centered in bottom half */}
+          <div className="absolute inset-0 flex items-end justify-center pb-0">
+            <div className="w-full h-[70vh] md:h-[75vh]">
+              <Globe className="w-full h-full" />
+            </div>
+          </div>
 
           {/* Overlays matching the provided mock */}
-          <div className="absolute top-4 left-4 z-20 flex items-center gap-2 select-none">
-            <img src={mapxLogo} alt="Mapx" className="w-8 h-8 object-contain drop-shadow dark:invert" />
-            <span className="text-white/95 tracking-[0.35em] font-medium" style={{ textShadow: '0 0 10px rgba(79,195,247,0.45)' }}>MAPX</span>
+          <div className="absolute top-6 left-6 z-20 flex items-center gap-3 select-none">
+            <img src={mapxLogo} alt="Mapx" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-lg" style={{ filter: 'brightness(0) invert(1)' }} />
+            <span className="text-white text-lg md:text-xl font-semibold tracking-wider">Mapx</span>
           </div>
 
           <button
             onClick={() => setShowLanding(false)}
-            className="absolute top-6 right-6 z-20 text-white/95 tracking-[0.25em] hover:scale-[1.04] transition-transform select-none"
-            style={{ textShadow: '0 0 16px rgba(79,195,247,0.55)' }}
+            className="absolute top-8 right-8 z-20 text-white tracking-[0.3em] hover:scale-105 hover:text-[#82CAFF] transition-all duration-300 select-none group font-['Press_Start_2P'] text-sm md:text-base"
+            style={{ textShadow: '0 0 20px rgba(130,202,255,0.6)' }}
           >
             DIVE IN →
+            <div className="absolute -bottom-1 left-0 w-0 h-[2px] bg-[#82CAFF] group-hover:w-full transition-all duration-300 shadow-[0_0_10px_rgba(130,202,255,0.8)]" />
           </button>
 
-          {/* City label (static for the video version) */}
-          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 select-none">
-            <span className="text-white/95 uppercase font-mono tracking-[0.35em] text-2xl" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>MUMBAI..</span>
-          </div>
-
           {/* Bottom caption */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 text-white/85 tracking-[0.35em] text-sm select-none" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 text-white/90 tracking-[0.25em] text-xs md:text-sm select-none font-['Press_Start_2P']" style={{ textShadow: '0 0 12px rgba(255,255,255,0.4)' }}>
             ♡ FROM ARYAN PATIL
           </div>
         </div>
