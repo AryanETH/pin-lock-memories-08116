@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Moon, Sun, Eye, Lock, Share2, Globe, Shield, Map as MapIcon, BookOpen, Menu } from 'lucide-react';
+import { MapPin, Moon, Sun, Eye, Lock, Share2, Map as MapIcon, BookOpen } from 'lucide-react';
 import SimpleMap from '@/components/SimpleMap';
 import mapxLogo from '@/assets/mapx-logo.png';
 import CreatePinModal from '@/components/CreatePinModal';
@@ -12,12 +12,13 @@ import SavedFactsMenu from '@/components/SavedFactsMenu';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Pin, savePin, getAllPins, updatePin, getPinByShareToken, logAccess, getOrCreateDeviceId, deletePin } from '@/lib/db';
-import { calculateDistance } from '@/lib/geo';
-import { getCurrentPosition } from '@/lib/geo';
+import { Pin, savePin, getAllPins, updatePin, logAccess, getOrCreateDeviceId, deletePin } from '@/lib/db';
+import { calculateDistance, getCurrentPosition } from '@/lib/geo';
 import { toast } from 'sonner';
 import { Map as LeafletMap } from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
+import Globe from '@/components/Globe';
+import { useNavigate } from 'react-router-dom';
 
 export default function Index() {
   const { theme, toggleTheme } = useTheme();
@@ -39,6 +40,8 @@ export default function Index() {
   const [savedFacts, setSavedFacts] = useState<LocationFact[]>([]);
   const [savedFactsMenuOpen, setSavedFactsMenuOpen] = useState(false);
   const [loadingFact, setLoadingFact] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
+  const navigate = useNavigate();
   
   // Local private pins cache (for devices without auth)
   const LOCAL_PINS_KEY = 'local-pins';
@@ -261,6 +264,18 @@ export default function Index() {
   };
 
   const handleSearchSelect = (lat: number, lng: number) => {
+    // On landing: transition to Fact Mode map focused on location
+    if (showLanding) {
+      setShowLanding(false);
+      setFactMode(true);
+      // Delay to allow map mount, then focus
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.setView([lat, lng], 15);
+        }
+      }, 50);
+      return;
+    }
     if (mapRef.current) {
       mapRef.current.setView([lat, lng], 15);
     }
@@ -284,7 +299,7 @@ export default function Index() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="relative h-screen w-full overflow-hidden" style={{ background: 'linear-gradient(135deg,#0B0F18 0%, #1A2235 100%)' }}>
       {/* Saved Facts Menu Button - Only visible in fact mode */}
       {/* Saved Facts Menu toggle moved to header; removed floating button */}
 
@@ -367,17 +382,36 @@ export default function Index() {
         </div>
       </motion.header>
 
-      {/* Map */}
-      <div className="absolute inset-0 pt-20 pb-6 px-6 flex items-center justify-center">
-        <SimpleMap
-          pins={pins}
-          onMapClick={handleMapClick}
-          onPinClick={handlePinClick}
-          userLocation={userLocation}
-          onShareLocation={handleShareLocation}
-          onMapReady={(map) => { mapRef.current = map; }}
-        />
-      </div>
+      {/* Landing or Map */}
+      {showLanding ? (
+        <div className="absolute inset-0 pt-24 px-6 flex flex-col items-center gap-6">
+          {/* Search */}
+          <div className="z-10">
+            <SearchBar onSelectLocation={handleSearchSelect} />
+          </div>
+          {/* Globe */}
+          <div className="w-full max-w-4xl aspect-square">
+            <Globe className="w-full h-full" />
+          </div>
+          {/* Subtext */}
+          <p className="text-sm text-white/70">Drag to rotate. Releases resume auto-rotation. Day/night shading with subtle glow.</p>
+        </div>
+      ) : (
+        <div className="absolute inset-0 pt-20 pb-6 px-6 flex items-center justify-center">
+          <SimpleMap
+            pins={pins}
+            onMapClick={handleMapClick}
+            onPinClick={handlePinClick}
+            userLocation={userLocation}
+            onShareLocation={handleShareLocation}
+            onMapReady={(map) => { mapRef.current = map; }}
+            onOverlayReady={(el) => {
+              // Ensure FactCard is bounded within container
+              // We rely on internal positioning; no portal logic required now
+            }}
+          />
+        </div>
+      )}
 
       {/* Modals */}
       <CreatePinModal
@@ -541,17 +575,21 @@ export default function Index() {
          </div>
        )}
 
-      {/* Fact Card */}
-      {(loadingFact || currentFact) && (
-        <FactCard
-          fact={currentFact}
-          isLoading={loadingFact}
-          onClose={() => {
-            setCurrentFact(null);
-            setLoadingFact(false);
-          }}
-          onSave={saveFact}
-        />
+      {/* Fact Card - ensure within map container; on landing keep centered */}
+      {(loadingFact || currentFact) && !showLanding && (
+        <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-24">
+          <div className="pointer-events-auto">
+            <FactCard
+              fact={currentFact}
+              isLoading={loadingFact}
+              onClose={() => {
+                setCurrentFact(null);
+                setLoadingFact(false);
+              }}
+              onSave={saveFact}
+            />
+          </div>
+        </div>
       )}
 
        {/* Saved Facts Menu */}

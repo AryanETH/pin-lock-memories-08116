@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { motion } from 'framer-motion';
 import { Pin } from '@/lib/db';
 import { Button } from '@/components/ui/button';
-import { Map, Satellite, Share2, LocateFixed, Navigation } from 'lucide-react';
+import { Map, Satellite, Share2, Navigation } from 'lucide-react';
 
 // Fix default icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -21,12 +21,14 @@ interface SimpleMapProps {
   userLocation: [number, number] | null;
   onShareLocation?: (lat: number, lng: number, zoom: number, pinId?: string) => void;
   onMapReady?: (map: L.Map) => void;
+  onOverlayReady?: (el: HTMLDivElement) => void;
 }
 
-export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, onShareLocation, onMapReady }: SimpleMapProps) {
+export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, onShareLocation, onMapReady, onOverlayReady }: SimpleMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsLayerRef = useRef<L.TileLayer | null>(null);
   const [mapView, setMapView] = useState<'standard' | 'satellite'>('standard');
@@ -66,6 +68,11 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
     // Notify parent that map is ready
     if (onMapReady) {
       onMapReady(map);
+    }
+
+    // Provide overlay root up
+    if (onOverlayReady && overlayRef.current) {
+      onOverlayReady(overlayRef.current);
     }
 
     return () => {
@@ -149,7 +156,25 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
       }
     });
 
-    // Pins are invisible - no markers rendered, only click detection works
+    // Render smart pins with gradient, border, and shadow
+    pins.forEach((pin) => {
+      const isPublic = !!pin.isPublic;
+      const pinHtml = `
+        <div style="
+          width: 18px;
+          height: 18px;
+          background: linear-gradient(180deg, #3AAE68, #2F8E58);
+          border: 3px solid white;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        " class="pin-marker ${isPublic ? 'public' : ''}"></div>`;
+      const icon = L.divIcon({ html: pinHtml, className: 'custom-pin', iconSize: [18, 18], iconAnchor: [9, 22] });
+      const marker = L.marker([pin.lat, pin.lng], { icon })
+        .addTo(map)
+        .on('click', () => onPinClick(pin));
+      currentMarkers[pin.id] = marker;
+    });
 
     // Manage user location marker
     if (userLocation && !currentMarkers['user-location']) {
@@ -259,8 +284,10 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
       className="relative h-full w-full"
     >
       {/* Map Container with spacing from header */}
-      <div className="map-container w-full h-full md:h-full aspect-[3/4] md:aspect-auto rounded-3xl overflow-hidden shadow-elevated mt-[14px] mb-[14px]">
+      <div className="map-container w-full h-full md:h-full aspect-[3/4] md:aspect-auto rounded-3xl overflow-hidden shadow-elevated mt-[14px] mb-[14px] relative">
         <div ref={containerRef} className="h-full w-full" />
+        {/* Overlay root for in-container UI */}
+        <div ref={overlayRef} className="absolute inset-0 z-[1000] pointer-events-none" />
       </div>
 
       {/* Map Controls - bottom right, circular glass buttons */}
