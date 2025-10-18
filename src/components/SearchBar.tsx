@@ -64,18 +64,40 @@ export default function SearchBar({ onSelectLocation }: SearchBarProps) {
     setShowResults(false);
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+      );
+      const data: SearchResult[] = await response.json();
+      if (data && data[0]) {
+        onSelectLocation(parseFloat(data[0].lat), parseFloat(data[0].lon));
+        setQuery('');
+        setResults([]);
+        setShowResults(false);
+      }
+    } catch (_) {
+      // ignore
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div ref={searchRef} className="relative w-full max-w-xs">
-      <div className="relative">
+    <div ref={searchRef} className="relative w-full max-w-md">
+      <form className="relative" onSubmit={handleSubmit}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search places..."
+          placeholder="Search a place..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pl-9 pr-4 h-9 glass-card border-white/20"
+          className="pl-9 pr-4 h-11 glass-card border-white/20"
         />
-      </div>
+      </form>
 
       {showResults && results.length > 0 && (
         <div className="absolute top-full mt-2 w-full glass-card rounded-xl shadow-xl border border-white/20 overflow-hidden z-[9999] max-h-64 overflow-y-auto">

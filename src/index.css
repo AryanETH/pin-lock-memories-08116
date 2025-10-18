@@ -227,6 +227,12 @@ All colors MUST be HSL.
     animation: publicPinPulse 2s infinite;
   }
 
+  /* Smart pin hover/click interactions */
+  .custom-pin:hover .pin-marker {
+    transform: rotate(-45deg) scale(1.08);
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45));
+  }
+
   @keyframes publicPinPulse {
     0% {
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
