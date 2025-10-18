@@ -9,6 +9,7 @@ import FileViewer from '@/components/FileViewer';
 import SearchBar from '@/components/SearchBar';
 import FactCard, { LocationFact } from '@/components/FactCard';
 import SavedFactsMenu from '@/components/SavedFactsMenu';
+import Globe from '@/components/Globe';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -17,6 +18,7 @@ import { calculateDistance, getCurrentPosition } from '@/lib/geo';
 import { toast } from 'sonner';
 import { Map as LeafletMap } from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
+import { cities } from '@/lib/cities';
 
 export default function Index() {
   const { theme, toggleTheme } = useTheme();
@@ -40,6 +42,8 @@ export default function Index() {
   const [loadingFact, setLoadingFact] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [anchorCoords, setAnchorCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentCity, setCurrentCity] = useState('MUMBAI..');
+  const [typingIndex, setTypingIndex] = useState(0);
   // No separate route; landing toggles to map view
   
   // Local private pins cache (for devices without auth)
@@ -66,6 +70,39 @@ export default function Index() {
     loadPins();
     getUserLocation();
     loadSavedFacts();
+    
+    // Shuffle cities initially
+    const shuffledCities = [...cities].sort(() => Math.random() - 0.5);
+    let cityIndex = 0;
+    
+    const typeCityName = (text: string, callback: () => void) => {
+      let i = 0;
+      setCurrentCity('');
+      const interval = setInterval(() => {
+        setCurrentCity(text.substring(0, i) + '..');
+        i++;
+        if (i > text.length) {
+          clearInterval(interval);
+          setTimeout(callback, 1000);
+        }
+      }, 80);
+    };
+    
+    const showNextCity = () => {
+      if (cityIndex >= shuffledCities.length) cityIndex = 0;
+      const cityName = shuffledCities[cityIndex].name;
+      
+      // Trigger globe to show city
+      if ((window as any).showCity) {
+        (window as any).showCity(cityName);
+      }
+      
+      typeCityName(cityName, showNextCity);
+      cityIndex++;
+    };
+    
+    // Start the city cycle
+    setTimeout(showNextCity, 500);
   }, []);
 
   const loadSavedFacts = () => {
@@ -384,24 +421,13 @@ export default function Index() {
 
       {/* Landing or Map */}
       {showLanding ? (
-        <div className="absolute inset-0">
-          {/* Cinematic half-earth looping video */}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,#0B0F18_0%,#1A2235_100%)]"></div>
-          <video
-            className="absolute inset-0 w-[140%] h-[140%] object-cover object-[80%_60%] scale-110"
-            autoPlay
-            muted
-            playsInline
-            loop
-            poster="https://images.pexels.com/photos/87009/earth-blue-planet-globe-planet-87009.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1200&w=1600"
-          >
-            <source src="https://cdn.coverr.co/videos/coverr-earth-planet-9090/1080p.mp4" type="video/mp4" />
-            <source src="https://cdn.coverr.co/videos/coverr-earth-planet-9090/720p.mp4" type="video/mp4" />
-          </video>
+        <div className="absolute inset-0 bg-black">
+          {/* 3D Globe */}
+          <Globe className="absolute inset-0 w-full h-full" />
 
-          {/* Overlays matching the provided mock */}
+          {/* Overlays */}
           <div className="absolute top-4 left-4 z-20 flex items-center gap-2 select-none">
-            <img src={mapxLogo} alt="Mapx" className="w-8 h-8 object-contain drop-shadow dark:invert" />
+            <img src={mapxLogo} alt="Mapx" className="w-8 h-8 object-contain drop-shadow invert" />
             <span className="text-white/95 tracking-[0.35em] font-medium" style={{ textShadow: '0 0 10px rgba(79,195,247,0.45)' }}>MAPX</span>
           </div>
 
@@ -413,14 +439,16 @@ export default function Index() {
             DIVE IN →
           </button>
 
-          {/* City label (static for the video version) */}
+          {/* City label with typing animation */}
           <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 select-none">
-            <span className="text-white/95 uppercase font-mono tracking-[0.35em] text-2xl" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>MUMBAI..</span>
+            <span className="text-white/95 uppercase font-mono tracking-[0.35em] text-2xl" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>
+              {currentCity}
+            </span>
           </div>
 
           {/* Bottom caption */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 text-white/85 tracking-[0.35em] text-sm select-none" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>
-            ♡ FROM ARYAN PATIL
+            ♡ CRAFTED BY ARYAN PATIL
           </div>
         </div>
       ) : (

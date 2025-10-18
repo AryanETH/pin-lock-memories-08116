@@ -1,357 +1,365 @@
-import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { cities } from '@/lib/cities';
+import { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
+import * as TWEEN from "@tweenjs/tween.js";
+import { cities } from "@/lib/cities";
+
+// Load OrbitControls dynamically
+const loadOrbitControls = async () => {
+  return new Promise<void>((resolve) => {
+    if ((THREE as any).OrbitControls) {
+      resolve();
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+    script.onload = () => resolve();
+    document.head.appendChild(script);
+  });
+};
 
 interface GlobeProps {
   className?: string;
+  onCityChange?: (city: string) => void;
 }
 
-// Utility to convert lat/lng to 3D unit sphere vector
-function latLngToVector3(lat: number, lng: number): THREE.Vector3 {
+// Converts lat/lng to a THREE.Vector3 on a sphere with given radius
+function latLngToVector3(lat: number, lng: number, radius: number = 2): THREE.Vector3 {
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lng + 180) * (Math.PI / 180);
-  const x = -Math.sin(phi) * Math.cos(theta);
-  const z = Math.sin(phi) * Math.sin(theta);
-  const y = Math.cos(phi);
+  const x = -(radius * Math.sin(phi) * Math.cos(theta));
+  const y = radius * Math.cos(phi);
+  const z = radius * Math.sin(phi) * Math.sin(theta);
   return new THREE.Vector3(x, y, z);
 }
 
-export default function Globe({ className }: GlobeProps) {
+// Create blurry star texture
+function createStarTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.2, 'rgba(255,255,255,0.7)');
+  gradient.addColorStop(0.4, 'rgba(255,255,255,0.1)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(canvas);
+}
+
+export default function Globe({ className, onCityChange }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const globeGroupRef = useRef<THREE.Group | null>(null);
-  const dayMeshRef = useRef<THREE.Mesh | null>(null);
-  const cloudsMeshRef = useRef<THREE.Mesh | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const earthRef = useRef<THREE.Mesh | null>(null);
+  const controlsRef = useRef<any>(null);
+  const currentMarkerRef = useRef<THREE.Mesh | null>(null);
+  const cometsRef = useRef<THREE.Mesh[]>([]);
+  const starMaterialRef = useRef<THREE.PointsMaterial | null>(null);
   const animationRef = useRef<number | null>(null);
-  const isDraggingRef = useRef(false);
-  const lastXRef = useRef(0);
-  const velocityRef = useRef(0); // radians per second around Y
-  const lastTimeRef = useRef<number>(0);
-  const [labelQueue, setLabelQueue] = useState<string[]>([]);
-  const [typedText, setTypedText] = useState('');
-  const [fading, setFading] = useState(false);
-  const labelIndexRef = useRef(0);
-  const typingTimerRef = useRef<number | null>(null);
-  const lastRandomIndexRef = useRef<number>(-1);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
+    let mounted = true;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#0B0F18');
-    sceneRef.current = scene;
+    const init = async () => {
+      await loadOrbitControls();
+      
+      if (!mounted || !containerRef.current) return;
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 0, 3.2);
-    cameraRef.current = camera;
+      const width = containerRef.current.clientWidth;
+      const height = containerRef.current.clientHeight;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(width, height);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+      // Scene setup
+      const scene = new THREE.Scene();
+      sceneRef.current = scene;
 
-    // Lights: subtle ambient and a directional sun light
-    const ambient = new THREE.AmbientLight(0x202030, 0.6);
-    scene.add(ambient);
-    const sun = new THREE.DirectionalLight(0xffffff, 1.25);
-    sun.position.set(5, 2, 2);
-    scene.add(sun);
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.z = 12;
+      cameraRef.current = camera;
 
-    // Atmosphere glow: larger sphere with additive blending
-    const atmosphereGeom = new THREE.SphereGeometry(1.035, 64, 64);
-    const atmosphereMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color('#82CAFF'),
-      transparent: true,
-      opacity: 0.16,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const atmosphere = new THREE.Mesh(atmosphereGeom, atmosphereMat);
-    scene.add(atmosphere);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(width, height);
+      containerRef.current.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
 
-    // Earth with day/night blending + clouds
-    const loader = new THREE.TextureLoader();
-    const urls = {
-      day: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-      night: 'https://unpkg.com/three-globe/example/img/earth-night.jpg',
-      normal: 'https://unpkg.com/three-globe/example/img/earth-normal.jpg',
-      specular: 'https://unpkg.com/three-globe/example/img/earth-specular.gif',
-      clouds: 'https://unpkg.com/three-globe/example/img/earth-clouds.png',
-    } as const;
-    const tex = Object.fromEntries(
-      (Object.entries(urls) as [keyof typeof urls, string][]).map(([k, u]) => {
-        const t = loader.load(u);
-        t.colorSpace = THREE.SRGBColorSpace as any;
-        t.anisotropy = 8;
-        t.generateMipmaps = true;
-        return [k, t];
-      })
-    ) as Record<keyof typeof urls, THREE.Texture>;
+      // OrbitControls
+      const OrbitControls = (THREE as any).OrbitControls;
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.enablePan = false;
+      controls.enableZoom = false;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.5;
+      controlsRef.current = controls;
 
-    const globeGroup = new THREE.Group();
-    scene.add(globeGroup);
-    globeGroupRef.current = globeGroup;
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+      scene.add(ambientLight);
+      const light = new THREE.DirectionalLight(0xffffff, 1.2);
+      light.position.set(5, 3, 5).normalize();
+      scene.add(light);
 
-    // Daylit earth using PBR-ish material
-    const globeGeom = new THREE.SphereGeometry(1, 256, 256);
-    const dayMat = new THREE.MeshStandardMaterial({
-      map: tex.day,
-      normalMap: tex.normal,
-      metalness: 0.02,
-      roughness: 0.9,
-      roughnessMap: undefined,
-      envMapIntensity: 0.15,
-    });
-    const dayMesh = new THREE.Mesh(globeGeom, dayMat);
-    dayMesh.rotation.y = Math.PI;
-    globeGroup.add(dayMesh);
-    dayMeshRef.current = dayMesh;
+      // Earth
+      const textureLoader = new THREE.TextureLoader();
+      const earthTexture = textureLoader.load('https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg');
+      const earthGeo = new THREE.SphereGeometry(2, 64, 64);
+      const earthMat = new THREE.MeshPhongMaterial({ map: earthTexture });
+      const earth = new THREE.Mesh(earthGeo, earthMat);
+      scene.add(earth);
+      earthRef.current = earth;
 
-    // Night lights overlay only on the dark side, via shader mask
-    const nightMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uNight: { value: tex.night },
-        uSunDir: { value: new THREE.Vector3().copy(sun.position).normalize() },
-        uIntensity: { value: 1.0 },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        varying vec3 vNormalW;
-        void main() {
-          vUv = uv;
-          vNormalW = normalize(mat3(modelMatrix) * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D uNight;
-        uniform vec3 uSunDir;
-        uniform float uIntensity;
-        varying vec2 vUv;
-        varying vec3 vNormalW;
-        void main() {
-          // Negative dot means night side
-          float ndl = dot(normalize(vNormalW), normalize(uSunDir));
-          float nightMask = smoothstep(0.1, -0.2, ndl); // soft terminator
-          vec3 nightCol = texture2D(uNight, vUv).rgb * 1.2;
-          gl_FragColor = vec4(nightCol * nightMask * uIntensity, nightMask * 0.95);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const nightMesh = new THREE.Mesh(globeGeom, nightMat);
-    nightMesh.rotation.y = Math.PI;
-    globeGroup.add(nightMesh);
-
-    // Subtle specular glint for oceans using another overlay material
-    // Keep it very faint for realism
-    const specularMat = new THREE.MeshPhongMaterial({
-      specularMap: tex.specular as any,
-      shininess: 12,
-      transparent: true,
-      opacity: 0.05,
-    });
-    const specMesh = new THREE.Mesh(globeGeom, specularMat);
-    specMesh.rotation.y = Math.PI;
-    globeGroup.add(specMesh);
-
-    // Cloud layer
-    const cloudsGeom = new THREE.SphereGeometry(1.01, 256, 256);
-    const cloudsMat = new THREE.MeshLambertMaterial({
-      map: tex.clouds,
-      transparent: true,
-      opacity: 0.9,
-      depthWrite: false,
-    });
-    const clouds = new THREE.Mesh(cloudsGeom, cloudsMat);
-    clouds.rotation.y = Math.PI;
-    globeGroup.add(clouds);
-    cloudsMeshRef.current = clouds;
-
-    // Drag/swipe controls
-    let pointerDown = false;
-    const onPointerDown = (e: PointerEvent) => {
-      pointerDown = true;
-      isDraggingRef.current = true;
-      lastXRef.current = e.clientX;
-      velocityRef.current = 0;
-    };
-    const onPointerMove = (e: PointerEvent) => {
-      if (!pointerDown || !globeGroupRef.current) return;
-      const dx = e.clientX - lastXRef.current;
-      lastXRef.current = e.clientX;
-      const deltaRad = (dx / width) * Math.PI; // full width -> 180°
-      globeGroupRef.current.rotation.y += deltaRad;
-      velocityRef.current = deltaRad / (1 / 60); // approx instantaneous velocity
-    };
-    const onPointerUp = () => {
-      pointerDown = false;
-      // let inertia fade and resume autorotation
-      isDraggingRef.current = false;
-    };
-    const dom = renderer.domElement;
-    dom.style.touchAction = 'none';
-    dom.addEventListener('pointerdown', onPointerDown);
-    dom.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
-    // Handle resize
-    const onResize = () => {
-      if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
-      rendererRef.current.setSize(w, h);
-      cameraRef.current.aspect = w / h;
-      cameraRef.current.updateProjectionMatrix();
-    };
-    const resizeObserver = new ResizeObserver(onResize);
-    resizeObserver.observe(containerRef.current);
-
-    // Animation loop with auto rotation and label updates
-    const animate = (t: number) => {
-      const timeSec = t / 1000;
-      const dt = lastTimeRef.current ? timeSec - lastTimeRef.current : 0;
-      lastTimeRef.current = timeSec;
-
-      if (globeGroupRef.current) {
-        // Auto-rotation (resume when not dragging)
-        const autoSpeed = 0.12; // rad/s
-        const damping = 0.95;
-        if (!isDraggingRef.current) {
-          // decay user imparted velocity to zero
-          velocityRef.current *= damping;
-          globeGroupRef.current.rotation.y += (autoSpeed + velocityRef.current) * dt;
-        } else {
-          // while dragging, let rotation be handled by pointer move
-        }
+      // Starfield
+      const starVertices: number[] = [];
+      for (let i = 0; i < 50000; i++) {
+        const x = THREE.MathUtils.randFloatSpread(2000);
+        const y = THREE.MathUtils.randFloatSpread(2000);
+        const z = THREE.MathUtils.randFloatSpread(2000);
+        starVertices.push(x, y, z);
       }
+      const starGeometry = new THREE.BufferGeometry();
+      starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+      
+      const starMaterial = new THREE.PointsMaterial({
+        map: createStarTexture(),
+        size: 1.5,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      starMaterialRef.current = starMaterial;
+      
+      const stars = new THREE.Points(starGeometry, starMaterial);
+      scene.add(stars);
 
-      // Drift clouds slowly opposite for parallax
-      if (cloudsMeshRef.current) {
-        cloudsMeshRef.current.rotation.y -= dt * 0.02;
-      }
+      // Comet spawning
+      const spawnComet = () => {
+        const cometGeo = new THREE.SphereGeometry(0.05, 16, 16);
+        const cometMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+        const comet = new THREE.Mesh(cometGeo, cometMat);
+        
+        const zPlane = -20;
+        const spread = 50;
+        const startSide = Math.floor(Math.random() * 4);
+        let startX: number, startY: number, targetX: number, targetY: number;
 
-      // Update labels approximately every 250ms
-      if (timeSec % 0.25 < dt && globeGroupRef.current && cameraRef.current) {
-        const forward = new THREE.Vector3();
-        cameraRef.current.getWorldDirection(forward).normalize();
-        // Transform each city vector by globe rotation
-        const rotY = new THREE.Matrix4().makeRotationY(globeGroupRef.current.rotation.y);
-        const visible = cities
-          .map((c) => {
-            const v = latLngToVector3(c.lat, c.lng).applyMatrix4(rotY);
-            const score = v.dot(forward.negate()); // front-facing hemisphere
-            return { name: c.name, score };
-          })
-          .filter((c) => c.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 5)
-          .map((c) => c.name);
-        setLabelQueue((prev) => {
-          // Update only if changed to avoid resetting typing unnecessarily
-          const same = prev.length === visible.length && prev.every((v, i) => v === visible[i]);
-          return same ? prev : visible;
-        });
-      }
+        switch(startSide) {
+          case 0: // top
+            startX = THREE.MathUtils.randFloatSpread(spread);
+            startY = spread / 2;
+            targetX = THREE.MathUtils.randFloatSpread(spread);
+            targetY = -spread / 2;
+            break;
+          case 1: // bottom
+            startX = THREE.MathUtils.randFloatSpread(spread);
+            startY = -spread / 2;
+            targetX = THREE.MathUtils.randFloatSpread(spread);
+            targetY = spread / 2;
+            break;
+          case 2: // left
+            startX = -spread / 2;
+            startY = THREE.MathUtils.randFloatSpread(spread);
+            targetX = spread / 2;
+            targetY = THREE.MathUtils.randFloatSpread(spread);
+            break;
+          default: // right
+            startX = spread / 2;
+            startY = THREE.MathUtils.randFloatSpread(spread);
+            targetX = -spread / 2;
+            targetY = THREE.MathUtils.randFloatSpread(spread);
+        }
+        
+        const startPos = new THREE.Vector3(startX, startY, zPlane);
+        comet.position.copy(startPos);
+        
+        const targetPos = new THREE.Vector3(targetX, targetY, zPlane);
+        (comet as any).userData.velocity = new THREE.Vector3().subVectors(targetPos, startPos).normalize().multiplyScalar(0.2);
 
-      renderer.render(scene, camera);
-      animationRef.current = requestAnimationFrame(animate);
+        scene.add(comet);
+        cometsRef.current.push(comet);
+      };
+
+      const cometLoop = () => {
+        if (mounted) {
+          spawnComet();
+          setTimeout(cometLoop, 3000);
+        }
+      };
+      cometLoop();
+
+      // Auto-rotation management
+      const resumeAutoRotation = () => {
+        if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = setTimeout(() => { 
+          if (controls) controls.autoRotate = true; 
+        }, 3000);
+      };
+      
+      const stopAutoRotation = () => {
+        if (controls) controls.autoRotate = false;
+        if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      };
+
+      renderer.domElement.addEventListener('mousedown', stopAutoRotation);
+      renderer.domElement.addEventListener('mouseup', resumeAutoRotation);
+      renderer.domElement.addEventListener('touchstart', stopAutoRotation);
+      renderer.domElement.addEventListener('touchend', resumeAutoRotation);
+
+      // Resize handler
+      const onResize = () => {
+        if (!containerRef.current || !camera || !renderer) return;
+        const w = containerRef.current.clientWidth;
+        const h = containerRef.current.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      };
+      window.addEventListener('resize', onResize);
+
+      // Animation loop
+      const animate = (time: number) => {
+        if (!mounted) return;
+        
+        TWEEN.update(time);
+
+        // Star blinking
+        if (starMaterialRef.current) {
+          const blinkTime = Date.now() * 0.0001;
+          starMaterialRef.current.opacity = 0.6 + Math.sin(blinkTime) * 0.4;
+        }
+        
+        // Comet animation
+        for (let i = cometsRef.current.length - 1; i >= 0; i--) {
+          const comet = cometsRef.current[i];
+          comet.position.add((comet as any).userData.velocity);
+          (comet.material as THREE.MeshBasicMaterial).opacity = 0.7 + Math.sin(Date.now() * 0.005 + i) * 0.3;
+
+          if (comet.position.length() > 60) {
+            scene.remove(comet);
+            cometsRef.current.splice(i, 1);
+          }
+        }
+
+        if (controls) controls.update();
+        renderer.render(scene, camera);
+        animationRef.current = requestAnimationFrame(animate);
+      };
+      animate(0);
+
+      return () => {
+        mounted = false;
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        window.removeEventListener('resize', onResize);
+        renderer.domElement.removeEventListener('mousedown', stopAutoRotation);
+        renderer.domElement.removeEventListener('mouseup', resumeAutoRotation);
+        renderer.domElement.removeEventListener('touchstart', stopAutoRotation);
+        renderer.domElement.removeEventListener('touchend', resumeAutoRotation);
+        if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+        controls?.dispose();
+        renderer.dispose();
+        if (containerRef.current?.contains(renderer.domElement)) {
+          containerRef.current.removeChild(renderer.domElement);
+        }
+      };
     };
-    animationRef.current = requestAnimationFrame(animate);
+
+    init();
 
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-      window.removeEventListener('pointerup', onPointerUp);
-      dom.removeEventListener('pointerdown', onPointerDown);
-      dom.removeEventListener('pointermove', onPointerMove);
-      resizeObserver.disconnect();
-      renderer.dispose();
-      containerRef.current?.removeChild(dom);
+      mounted = false;
     };
   }, []);
 
-  // Typing effect with 1s random city cycle and soft fade-out
-  useEffect(() => {
-    if (typingTimerRef.current) {
-      window.clearTimeout(typingTimerRef.current);
-      typingTimerRef.current = null;
-    }
-    if (labelQueue.length === 0) {
-      setTypedText('');
-      return;
-    }
-    // Choose a random label from current visible list, avoid immediate repeat
-    const pickRandom = () => {
-      if (labelQueue.length === 0) return '';
-      let idx = Math.floor(Math.random() * labelQueue.length);
-      if (labelQueue.length > 1 && idx === lastRandomIndexRef.current) {
-        idx = (idx + 1) % labelQueue.length;
-      }
-      lastRandomIndexRef.current = idx;
-      return labelQueue[idx];
-    };
+  // City marker and camera rotation
+  const showCityMarker = (lat: number, lng: number) => {
+    if (!sceneRef.current) return;
 
-    const runCycle = () => {
-      const next = pickRandom();
-      if (!next) return;
-      setFading(false);
-      setTypedText('');
-      let i = 0;
-      const totalMs = 1000;
-      const letterDelay = Math.max(18, Math.floor(650 / next.length));
-      const typeLetters = () => {
-        setTypedText(next.slice(0, i + 1));
-        i += 1;
-        if (i < next.length) {
-          typingTimerRef.current = window.setTimeout(typeLetters, letterDelay);
-        } else {
-          const typedDuration = i * letterDelay;
-          const remaining = Math.max(220, totalMs - typedDuration);
-          typingTimerRef.current = window.setTimeout(() => {
-            setFading(true);
-            typingTimerRef.current = window.setTimeout(() => {
-              setTypedText('');
-              runCycle();
-            }, 220);
-          }, remaining - 220);
+    // Hide previous marker
+    if (currentMarkerRef.current) {
+      new TWEEN.Tween((currentMarkerRef.current.material as THREE.MeshBasicMaterial))
+        .to({ opacity: 0 }, 500)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onComplete(() => {
+          if (currentMarkerRef.current && sceneRef.current) {
+            sceneRef.current.remove(currentMarkerRef.current);
+          }
+        })
+        .start();
+    }
+    
+    const markerGeo = new THREE.ConeGeometry(0.05, 0.2, 16);
+    markerGeo.translate(0, 0.1, 0);
+    const markerMat = new THREE.MeshBasicMaterial({ color: 0xff4141, transparent: true, opacity: 0 });
+    const marker = new THREE.Mesh(markerGeo, markerMat);
+
+    const position = latLngToVector3(lat, lng, 2);
+    marker.position.copy(position);
+    marker.lookAt(new THREE.Vector3(0, 0, 0));
+    marker.rotateX(Math.PI / 2);
+
+    sceneRef.current.add(marker);
+    currentMarkerRef.current = marker;
+
+    new TWEEN.Tween(markerMat)
+      .to({ opacity: 1 }, 500)
+      .easing(TWEEN.Easing.Cubic.In)
+      .delay(500)
+      .start();
+  };
+
+  const pointCameraToCity = (lat: number, lng: number) => {
+    if (!cameraRef.current || !controlsRef.current) return;
+
+    if (controlsRef.current) controlsRef.current.autoRotate = false;
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+    const targetPosition = latLngToVector3(lat, lng, 2);
+    const cameraDistance = cameraRef.current.position.length();
+    const newCameraPosition = targetPosition.clone().normalize().multiplyScalar(cameraDistance);
+
+    new TWEEN.Tween(cameraRef.current.position)
+      .to(newCameraPosition, 1500)
+      .easing(TWEEN.Easing.Cubic.InOut)
+      .onUpdate(() => {
+        if (cameraRef.current) {
+          cameraRef.current.lookAt(0, 0, 0);
         }
-      };
-      typingTimerRef.current = window.setTimeout(typeLetters, 60);
-    };
+      })
+      .onComplete(() => {
+        if (controlsRef.current) {
+          controlsRef.current.update();
+          inactivityTimerRef.current = setTimeout(() => {
+            if (controlsRef.current) controlsRef.current.autoRotate = true;
+          }, 3000);
+        }
+      })
+      .start();
+  };
 
-    runCycle();
-    return () => {
-      if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+  // Expose method to show city from parent
+  useEffect(() => {
+    (window as any).showCity = (cityName: string) => {
+      const city = cities.find(c => c.name === cityName);
+      if (city) {
+        setTimeout(() => {
+          pointCameraToCity(city.lat, city.lng);
+          showCityMarker(city.lat, city.lng);
+        }, 200);
+      }
     };
-  }, [labelQueue]);
+  }, []);
 
   return (
-    <div className={className} style={{ position: 'relative' }}>
-      <div
-        ref={containerRef}
-        className="relative w-full h-full rounded-[24px] overflow-hidden shadow-elevated"
-        style={{ background: 'linear-gradient(180deg, #0B0F18 0%, #1A2235 100%)' }}
-      />
-      {/* Dynamic labels area */}
-      <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 text-center text-[15px] sm:text-lg font-medium tracking-wide">
-        <span
-          className={
-            `px-3 py-1 rounded-full bg-white/10 text-[#8ad3ff] shadow-[0_0_24px_rgba(130,202,255,0.35)] transition-opacity duration-200 uppercase font-mono tracking-[0.35em] ` +
-            (fading ? 'opacity-0' : 'opacity-100')
-          }
-        >
-          {typedText || ' '}<span className="opacity-70">▌</span>
-        </span>
-      </div>
-    </div>
+    <div 
+      ref={containerRef} 
+      className={className}
+      style={{ width: '100%', height: '100%', background: '#000000' }}
+    />
   );
 }
