@@ -25,7 +25,19 @@ interface SimpleMapProps {
   // Optional: when provided, an anchored overlay (e.g., FactCard) will be rendered
   // inside the map at this lat/lng. Provide overlayContent to customize rendering.
   anchoredLatLng?: { lat: number; lng: number };
-  overlayContent?: (anchor: { x: number; y: number } | null) => ReactNode;
+  // When provided, overlayContent receives pixel coords of the anchor along
+  // with current zoom and container dimensions for responsive positioning.
+  overlayContent?: (
+    anchor:
+      | null
+      | {
+          x: number;
+          y: number;
+          zoom: number;
+          containerWidth: number;
+          containerHeight: number;
+        }
+  ) => ReactNode;
 }
 
 export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, onShareLocation, onMapReady, onOverlayReady, anchoredLatLng, overlayContent }: SimpleMapProps) {
@@ -36,7 +48,11 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsLayerRef = useRef<L.TileLayer | null>(null);
   const [mapView, setMapView] = useState<'standard' | 'satellite'>('standard');
-  const [anchorPx, setAnchorPx] = useState<{ x: number; y: number } | null>(null);
+  const [anchorPx, setAnchorPx] = useState<
+    | null
+    | { x: number; y: number; zoom: number; containerWidth: number; containerHeight: number }
+  >(null);
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -80,7 +96,20 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
       onOverlayReady(overlayRef.current);
     }
 
+    // Track container size for responsive overlay placement
+    const updateContainerSize = () => {
+      if (!containerRef.current) return;
+      setContainerSize({
+        width: containerRef.current.clientWidth,
+        height: containerRef.current.clientHeight,
+      });
+    };
+    updateContainerSize();
+    const resizeObserver = new ResizeObserver(updateContainerSize);
+    resizeObserver.observe(containerRef.current);
+
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -222,17 +251,25 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
         return;
       }
       const point = map.latLngToContainerPoint([anchoredLatLng.lat, anchoredLatLng.lng]);
-      setAnchorPx({ x: point.x, y: point.y });
+      setAnchorPx({
+        x: point.x,
+        y: point.y,
+        zoom: map.getZoom(),
+        containerWidth: containerSize.width,
+        containerHeight: containerSize.height,
+      });
     };
 
     updateAnchor();
     map.on('move', updateAnchor);
     map.on('zoom', updateAnchor);
+    map.on('zoomend', updateAnchor);
     return () => {
       map.off('move', updateAnchor);
       map.off('zoom', updateAnchor);
+      map.off('zoomend', updateAnchor);
     };
-  }, [anchoredLatLng]);
+  }, [anchoredLatLng, containerSize.width, containerSize.height]);
 
   // Add global functions for sharing location from popup
   useEffect(() => {
