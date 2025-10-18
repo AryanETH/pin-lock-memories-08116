@@ -1,6 +1,11 @@
 import { useEffect, useRef } from "react";
+import { cities as allCities } from "@/lib/cities";
 
-export default function Globe() {
+interface GlobeProps {
+  onCityChange?: (name: string, lat: number, lon: number) => void;
+}
+
+export default function Globe({ onCityChange }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -48,7 +53,7 @@ export default function Globe() {
 
       // ✨ Stars
       const starVertices: number[] = [];
-      for (let i = 0; i < 10000; i++) {
+      for (let i = 0; i < 20000; i++) {
         const x = THREE.MathUtils.randFloatSpread(2000);
         const y = THREE.MathUtils.randFloatSpread(2000);
         const z = THREE.MathUtils.randFloatSpread(2000);
@@ -56,9 +61,48 @@ export default function Globe() {
       }
       const starGeometry = new THREE.BufferGeometry();
       starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starVertices, 3));
-      const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+      const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.25, transparent: true, depthWrite: false });
       const stars = new THREE.Points(starGeometry, starMaterial);
       scene.add(stars);
+
+      // ☄️ Tail-less comets behind the Earth
+      const comets: any[] = [];
+      const spawnComet = () => {
+        const cometGeo = new THREE.SphereGeometry(0.06, 12, 12);
+        const cometMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+        const comet = new THREE.Mesh(cometGeo, cometMat) as any;
+        const zPlane = -20; // behind earth given camera at +z
+        const spread = 60;
+
+        // start from one edge, go across opposite edge
+        const side = Math.floor(Math.random() * 4);
+        let sx = 0, sy = 0, tx = 0, ty = 0;
+        switch (side) {
+          case 0: // top -> bottom
+            sx = THREE.MathUtils.randFloatSpread(spread); sy = spread / 2;
+            tx = THREE.MathUtils.randFloatSpread(spread); ty = -spread / 2;
+            break;
+          case 1: // bottom -> top
+            sx = THREE.MathUtils.randFloatSpread(spread); sy = -spread / 2;
+            tx = THREE.MathUtils.randFloatSpread(spread); ty = spread / 2;
+            break;
+          case 2: // left -> right
+            sx = -spread / 2; sy = THREE.MathUtils.randFloatSpread(spread);
+            tx = spread / 2; ty = THREE.MathUtils.randFloatSpread(spread);
+            break;
+          default: // right -> left
+            sx = spread / 2; sy = THREE.MathUtils.randFloatSpread(spread);
+            tx = -spread / 2; ty = THREE.MathUtils.randFloatSpread(spread);
+        }
+        const start = new THREE.Vector3(sx, sy, zPlane);
+        const target = new THREE.Vector3(tx, ty, zPlane);
+        comet.position.copy(start);
+        comet.userData = { velocity: target.clone().sub(start).normalize().multiplyScalar(0.25) };
+        scene.add(comet);
+        comets.push(comet);
+      };
+
+      const cometInterval = setInterval(spawnComet, 250); // 4 per second
 
       // 🎥 Camera & Controls
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -68,16 +112,10 @@ export default function Globe() {
       controls.autoRotateSpeed = 0.5;
       camera.position.z = 12;
 
-      // 🏙 City typing + rotation
-      const cityCoordinates: Record<string, { lat: number; lon: number }> = {
-        MUMBAI: { lat: 19.076, lon: 72.8777 },
-        TOKYO: { lat: 35.6895, lon: 139.6917 },
-        LONDON: { lat: 51.5074, lon: -0.1278 },
-        PARIS: { lat: 48.8566, lon: 2.3522 },
-        NEWYORK: { lat: 40.7128, lon: -74.006 },
-        DUBAI: { lat: 25.2048, lon: 55.2708 },
-        SYDNEY: { lat: -33.8688, lon: 151.2093 },
-      };
+      // 🏙 City typing + rotation (imported 300+ cities)
+      const cityCoordinates: Record<string, { lat: number; lon: number }> = Object.fromEntries(
+        allCities.map(c => [c.name.toUpperCase(), { lat: c.lat, lon: c.lng }])
+      );
       const cities = Object.keys(cityCoordinates).sort(() => Math.random() - 0.5);
 
       const cityLabel = document.createElement("div");
@@ -85,7 +123,8 @@ export default function Globe() {
       cityLabel.style.top = "10%";
       cityLabel.style.width = "100%";
       cityLabel.style.textAlign = "center";
-      cityLabel.style.fontFamily = "'Press Start 2P', monospace";
+      cityLabel.className = 'landing-font';
+      cityLabel.style.fontFamily = "'Basis33','Basis 33', monospace";
       cityLabel.style.color = "white";
       cityLabel.style.letterSpacing = "2px";
       cityLabel.style.pointerEvents = "none";
@@ -97,7 +136,7 @@ export default function Globe() {
       footer.style.bottom = "30px";
       footer.style.width = "100%";
       footer.style.textAlign = "center";
-      footer.style.fontFamily = "'Press Start 2P', monospace";
+      footer.style.fontFamily = "'Basis33','Basis 33', monospace";
       footer.style.fontSize = "10px";
       footer.style.color = "#ffb3b3";
       footer.style.pointerEvents = "none";
@@ -143,6 +182,7 @@ export default function Globe() {
         const { lat, lon } = cityCoordinates[city];
         pointCameraTo(lat, lon);
         typeCity(city, showNextCity);
+        if (onCityChange) onCityChange(city, lat, lon);
       }
 
       showNextCity();
@@ -151,6 +191,17 @@ export default function Globe() {
       function animate(time: number) {
         requestAnimationFrame(animate);
         TWEEN.update(time);
+        // animate comets
+        for (let i = comets.length - 1; i >= 0; i--) {
+          const c = comets[i];
+          c.position.add(c.userData.velocity);
+          // gentle blink
+          c.material.opacity = 0.6 + Math.sin(Date.now() * 0.004 + i) * 0.4;
+          if (c.position.length() > 80) {
+            scene.remove(c);
+            comets.splice(i, 1);
+          }
+        }
         controls.update();
         renderer.render(scene, camera);
       }
@@ -174,6 +225,7 @@ export default function Globe() {
         document.body.removeChild(cityLabel);
         document.body.removeChild(footer);
         renderer.dispose();
+        clearInterval(cometInterval);
       };
     }
 
