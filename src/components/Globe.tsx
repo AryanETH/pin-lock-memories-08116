@@ -61,11 +61,11 @@ export default function Globe({ className }: GlobeProps) {
     scene.add(sun);
 
     // Atmosphere glow: larger sphere with additive blending
-    const atmosphereGeom = new THREE.SphereGeometry(1.04, 64, 64);
+    const atmosphereGeom = new THREE.SphereGeometry(1.035, 64, 64);
     const atmosphereMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color('#4FC3F7'),
+      color: new THREE.Color('#82CAFF'),
       transparent: true,
-      opacity: 0.12,
+      opacity: 0.16,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -75,8 +75,8 @@ export default function Globe({ className }: GlobeProps) {
     // Earth sphere with realistic textures
     const loader = new THREE.TextureLoader();
     const [albedo, normal] = [
-      // Blue marble like textures (CDN sources)
-      'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+      // Higher-saturation blue/green earth textures
+      'https://unpkg.com/three-globe/example/img/earth-night.jpg',
       'https://unpkg.com/three-globe/example/img/earth-normal.jpg',
     ].map((url) => loader.load(url));
 
@@ -85,7 +85,9 @@ export default function Globe({ className }: GlobeProps) {
       map: albedo,
       normalMap: normal,
       metalness: 0.0,
-      roughness: 1.0,
+      roughness: 0.95,
+      emissive: new THREE.Color('#0A3D62'),
+      emissiveIntensity: 0.08,
     });
     const globe = new THREE.Mesh(globeGeom, globeMat);
     globe.rotation.y = Math.PI; // orient texture
@@ -205,14 +207,17 @@ export default function Globe({ className }: GlobeProps) {
       setTypedText(nextLabel.slice(0, i + 1));
       i += 1;
       if (i < nextLabel.length) {
-        typingTimerRef.current = window.setTimeout(type, 50);
+        typingTimerRef.current = window.setTimeout(type, 40);
       } else {
-        // hold for a moment then move to next
+        // hold so total per-city ~2s
+        const totalHoldMs = 2000; // requested 2s interval per city
+        const typedDuration = i * 40; // approximate typing ms
+        const remainingHold = Math.max(300, totalHoldMs - typedDuration);
         typingTimerRef.current = window.setTimeout(() => {
           labelIndexRef.current += 1;
           // trigger next cycle by updating state
           setTypedText('');
-        }, 1600);
+        }, remainingHold);
       }
     };
     typingTimerRef.current = window.setTimeout(type, 200);
@@ -230,7 +235,7 @@ export default function Globe({ className }: GlobeProps) {
       />
       {/* Dynamic labels area */}
       <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 text-center text-[15px] sm:text-lg font-medium tracking-wide">
-        <span className="px-3 py-1 rounded-full bg-white/10 text-[#A5C9FF] shadow-[0_0_24px_rgba(79,195,247,0.25)]">
+        <span className="px-3 py-1 rounded-full bg-white/10 text-[#8ad3ff] shadow-[0_0_24px_rgba(130,202,255,0.35)]">
           {typedText || ' '}<span className="opacity-70">▌</span>
         </span>
       </div>
