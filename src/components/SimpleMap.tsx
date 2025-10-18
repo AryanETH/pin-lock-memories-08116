@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, ReactNode } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { motion } from 'framer-motion';
@@ -22,9 +22,13 @@ interface SimpleMapProps {
   onShareLocation?: (lat: number, lng: number, zoom: number, pinId?: string) => void;
   onMapReady?: (map: L.Map) => void;
   onOverlayReady?: (el: HTMLDivElement) => void;
+  // Optional: when provided, an anchored overlay (e.g., FactCard) will be rendered
+  // inside the map at this lat/lng. Provide overlayContent to customize rendering.
+  anchoredLatLng?: { lat: number; lng: number };
+  overlayContent?: (anchor: { x: number; y: number } | null) => ReactNode;
 }
 
-export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, onShareLocation, onMapReady, onOverlayReady }: SimpleMapProps) {
+export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, onShareLocation, onMapReady, onOverlayReady, anchoredLatLng, overlayContent }: SimpleMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,6 +36,7 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsLayerRef = useRef<L.TileLayer | null>(null);
   const [mapView, setMapView] = useState<'standard' | 'satellite'>('standard');
+  const [anchorPx, setAnchorPx] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -206,6 +211,29 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
     }
   }, [pins, userLocation, onPinClick]);
 
+  // Update anchored overlay pixel position when map moves/zooms or anchor changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    const updateAnchor = () => {
+      if (!anchoredLatLng) {
+        setAnchorPx(null);
+        return;
+      }
+      const point = map.latLngToContainerPoint([anchoredLatLng.lat, anchoredLatLng.lng]);
+      setAnchorPx({ x: point.x, y: point.y });
+    };
+
+    updateAnchor();
+    map.on('move', updateAnchor);
+    map.on('zoom', updateAnchor);
+    return () => {
+      map.off('move', updateAnchor);
+      map.off('zoom', updateAnchor);
+    };
+  }, [anchoredLatLng]);
+
   // Add global functions for sharing location from popup
   useEffect(() => {
     (window as any).shareLocation = (lat: number, lng: number, pinId?: string) => {
@@ -287,7 +315,9 @@ export default function SimpleMap({ pins, onMapClick, onPinClick, userLocation, 
       <div className="map-container w-full h-full md:h-full aspect-[3/4] md:aspect-auto rounded-3xl overflow-hidden shadow-elevated mt-[14px] mb-[14px] relative">
         <div ref={containerRef} className="h-full w-full" />
         {/* Overlay root for in-container UI */}
-        <div ref={overlayRef} className="absolute inset-0 z-[1000] pointer-events-none" />
+        <div ref={overlayRef} className="absolute inset-0 z-[1000] pointer-events-none">
+          {overlayContent ? overlayContent(anchorPx) : null}
+        </div>
       </div>
 
       {/* Map Controls - bottom right, circular glass buttons */}

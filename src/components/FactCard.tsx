@@ -21,9 +21,13 @@ interface FactCardProps {
   isLoading?: boolean;
   onClose: () => void;
   onSave: (fact: LocationFact) => void;
+  // When provided, render the card anchored to these pixel coordinates
+  // within a positioned container (e.g., map overlay). Coordinates are
+  // expected to be relative to that container's top-left.
+  anchor?: { x: number; y: number } | null;
 }
 
-export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardProps) {
+export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: FactCardProps) {
   const [stats, setStats] = useState({ likes: 0, shares: 0, saves: 0 });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
@@ -173,7 +177,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !anchor) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 50 }}
@@ -202,16 +206,31 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
 
   if (!fact) return null;
 
+  // Anchored (inside a map overlay) vs fixed (global)
+  const isAnchored = !!anchor;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 0, y: isAnchored ? 10 : 50 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4"
-      style={{
-        maxWidth: 'calc(100vw - 2rem)',
-        left: 'clamp(1rem, 50%, calc(100vw - 1rem))',
-      }}
+      exit={{ opacity: 0, y: isAnchored ? 10 : 50 }}
+      className={
+        isAnchored
+          ? 'absolute z-[1001] w-[min(92vw,420px)] px-2 pointer-events-auto'
+          : 'fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4'
+      }
+      style={
+        isAnchored
+          ? {
+              left: `${anchor!.x}px`,
+              top: `${anchor!.y}px`,
+              transform: 'translate(-50%, calc(-100% - 16px))', // above the anchor, with small gap
+            }
+          : {
+              maxWidth: 'calc(100vw - 2rem)',
+              left: 'clamp(1rem, 50%, calc(100vw - 1rem))',
+            }
+      }
     >
       <Card className="relative shadow-2xl border-2 border-primary/30 backdrop-blur-xl bg-background/95">
         <button
@@ -322,8 +341,10 @@ export default function FactCard({ fact, isLoading, onClose, onSave }: FactCardP
           </div>
         </CardContent>
         
-        {/* Pointing arrow */}
-        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[12px] border-t-white dark:border-t-black" />
+        {/* Pointing arrow toward the anchor (only for anchored variant) */}
+        {isAnchored && (
+          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-b-[12px] border-b-white dark:border-b-black" />
+        )}
       </Card>
 
       {fact && (

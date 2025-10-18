@@ -147,13 +147,14 @@ All colors MUST be HSL.
   }
 
   .glass-card {
-    @apply bg-white/10 dark:bg-black/20 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-3xl shadow-2xl;
+    /* Reduce transparency for stronger white/black theme */
+    @apply bg-white/70 dark:bg-black/70 backdrop-blur-xl border border-border rounded-3xl shadow-2xl;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover {
-    @apply bg-white/15 dark:bg-black/30;
-    box-shadow: 0 30px 80px -15px hsl(262 83% 58% / 0.4);
+    @apply bg-white/80 dark:bg-black/80;
+    box-shadow: 0 30px 80px -15px hsl(262 83% 58% / 0.35);
     transform: translateY(-2px);
   }
 

@@ -41,6 +41,7 @@ export default function Index() {
   const [savedFactsMenuOpen, setSavedFactsMenuOpen] = useState(false);
   const [loadingFact, setLoadingFact] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
+  const [anchorCoords, setAnchorCoords] = useState<{ lat: number; lng: number } | null>(null);
   const navigate = useNavigate();
   
   // Local private pins cache (for devices without auth)
@@ -114,6 +115,7 @@ export default function Index() {
       
       // Set the shared location for the modal
       setSharedLocation({ lat: latNum, lng: lngNum, zoom: zoomNum });
+      setAnchorCoords({ lat: latNum, lng: lngNum });
       // Center map if available
       if (mapRef.current) {
         mapRef.current.setView([latNum, lngNum], zoomNum);
@@ -165,6 +167,7 @@ export default function Index() {
     // If in fact mode, fetch and display a fact
     if (factMode) {
       setLoadingFact(true);
+      setAnchorCoords({ lat, lng });
       try {
         const { data, error } = await supabase.functions.invoke('get-location-fact', {
           body: { lat, lng }
@@ -299,7 +302,7 @@ export default function Index() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden" style={{ background: 'linear-gradient(135deg,#0B0F18 0%, #1A2235 100%)' }}>
+    <div className="relative h-screen w-full overflow-hidden bg-background">
       {/* Saved Facts Menu Button - Only visible in fact mode */}
       {/* Saved Facts Menu toggle moved to header; removed floating button */}
 
@@ -310,7 +313,7 @@ export default function Index() {
         transition={{ type: 'spring', damping: 20 }}
         className="absolute top-0 left-0 right-0 z-10 p-4"
       >
-        <div className="glass-card px-6 py-3 flex items-center justify-center gap-6">
+        <div className="px-6 py-3 flex items-center justify-center gap-6 rounded-2xl bg-background border shadow-md">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -367,7 +370,7 @@ export default function Index() {
                 variant="secondary"
                 size="icon"
                 onClick={() => setSavedFactsMenuOpen(true)}
-                className="rounded-full shadow-lg backdrop-blur-xl bg-white/80 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 border border-white/20 relative"
+                className="rounded-full shadow-lg bg-secondary hover:bg-secondary/90 border relative"
                 title="Saved Facts"
               >
                 <BookOpen className="w-5 h-5" />
@@ -384,7 +387,7 @@ export default function Index() {
 
       {/* Landing or Map */}
       {showLanding ? (
-        <div className="absolute inset-0 pt-24 px-6 flex flex-col items-center gap-6">
+        <div className="absolute inset-0 pt-28 px-6 md:px-10 flex flex-col items-center gap-8">
           {/* Search */}
           <div className="z-10">
             <SearchBar onSelectLocation={handleSearchSelect} />
@@ -394,10 +397,10 @@ export default function Index() {
             <Globe className="w-full h-full" />
           </div>
           {/* Subtext */}
-          <p className="text-sm text-white/70">Drag to rotate. Releases resume auto-rotation. Day/night shading with subtle glow.</p>
+          <p className="text-sm text-muted-foreground">Drag to rotate. Releases resume auto-rotation. Day/night shading with subtle glow.</p>
         </div>
       ) : (
-        <div className="absolute inset-0 pt-20 pb-6 px-6 flex items-center justify-center">
+        <div className="absolute inset-0 pt-24 pb-8 px-6 md:px-8 flex items-center justify-center">
           <SimpleMap
             pins={pins}
             onMapClick={handleMapClick}
@@ -405,10 +408,22 @@ export default function Index() {
             userLocation={userLocation}
             onShareLocation={handleShareLocation}
             onMapReady={(map) => { mapRef.current = map; }}
-            onOverlayReady={(el) => {
-              // Ensure FactCard is bounded within container
-              // We rely on internal positioning; no portal logic required now
-            }}
+            anchoredLatLng={currentFact ? { lat: currentFact.coordinates.lat, lng: currentFact.coordinates.lng } : anchorCoords || undefined}
+            overlayContent={(anchor) => (
+              (loadingFact || currentFact) ? (
+                <FactCard
+                  fact={currentFact}
+                  isLoading={loadingFact}
+                  onClose={() => {
+                    setCurrentFact(null);
+                    setLoadingFact(false);
+                    setAnchorCoords(null);
+                  }}
+                  onSave={saveFact}
+                  anchor={anchor}
+                />
+              ) : null
+            )}
           />
         </div>
       )}
@@ -575,22 +590,7 @@ export default function Index() {
          </div>
        )}
 
-      {/* Fact Card - ensure within map container; on landing keep centered */}
-      {(loadingFact || currentFact) && !showLanding && (
-        <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-24">
-          <div className="pointer-events-auto">
-            <FactCard
-              fact={currentFact}
-              isLoading={loadingFact}
-              onClose={() => {
-                setCurrentFact(null);
-                setLoadingFact(false);
-              }}
-              onSave={saveFact}
-            />
-          </div>
-        </div>
-      )}
+      {/* Fact Card is now rendered inside the map overlay via SimpleMap.overlayContent */}
 
        {/* Saved Facts Menu */}
       <SavedFactsMenu
