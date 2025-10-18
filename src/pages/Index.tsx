@@ -17,8 +17,6 @@ import { calculateDistance, getCurrentPosition } from '@/lib/geo';
 import { toast } from 'sonner';
 import { Map as LeafletMap } from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
-import Globe from '@/components/Globe';
-import { useNavigate } from 'react-router-dom';
 
 export default function Index() {
   const { theme, toggleTheme } = useTheme();
@@ -42,7 +40,7 @@ export default function Index() {
   const [loadingFact, setLoadingFact] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [anchorCoords, setAnchorCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const navigate = useNavigate();
+  // No separate route; landing toggles to map view
   
   // Local private pins cache (for devices without auth)
   const LOCAL_PINS_KEY = 'local-pins';
@@ -303,115 +301,125 @@ export default function Index() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-background">
-      {/* Saved Facts Menu Button - Only visible in fact mode */}
-      {/* Saved Facts Menu toggle moved to header; removed floating button */}
-
-      {/* Header Bar */}
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ type: 'spring', damping: 20 }}
-        className="absolute top-0 left-0 right-0 z-10 p-4"
-      >
-        <div className="px-6 py-3 flex items-center justify-center gap-6 rounded-2xl bg-background border shadow-md">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center gap-2"
-          >
-            <img 
-              src={mapxLogo} 
-              alt="Logo" 
-              className="w-8 h-8 object-contain dark:invert" 
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex-1 max-w-md"
-          >
-            <SearchBar onSelectLocation={handleSearchSelect} />
-          </motion.div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-full"
-              title={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+      {/* Header is hidden on landing to match the cinematic hero */}
+      {!showLanding && (
+        <motion.header
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          transition={{ type: 'spring', damping: 20 }}
+          className="absolute top-0 left-0 right-0 z-10 p-4"
+        >
+          <div className="px-6 py-3 flex items-center justify-center gap-6 rounded-2xl bg-background border shadow-md">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center gap-2"
             >
-              {theme === 'light' ? (
-                <Moon className="w-5 h-5" />
-              ) : (
-                <Sun className="w-5 h-5" />
-              )}
-            </Button>
-            <Button
-              variant={factMode ? 'default' : 'ghost'}
-              size="icon"
-              onClick={() => {
-                const next = !factMode;
-                setFactMode(next);
-                setCurrentFact(null);
-                if (!next) setSavedFactsMenuOpen(false);
-                toast.success(factMode ? 'Lock Memory Mode Activated' : 'Fact Mode Activated 📖');
-              }}
-              className="rounded-full"
-              title={factMode ? 'Switch to Lock Memory Mode' : 'Fact Where You Tap'}
+              <img
+                src={mapxLogo}
+                alt="Logo"
+                className="w-8 h-8 object-contain dark:invert"
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex-1 max-w-md"
             >
-              {factMode ? <Lock className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
-            </Button>
-            {factMode && (
+              <SearchBar onSelectLocation={handleSearchSelect} />
+            </motion.div>
+
+            <div className="flex items-center gap-2">
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="icon"
-                onClick={() => setSavedFactsMenuOpen(true)}
-                className="rounded-full shadow-lg bg-secondary hover:bg-secondary/90 border relative"
-                title="Saved Facts"
+                onClick={toggleTheme}
+                className="rounded-full"
+                title={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
               >
-                <BookOpen className="w-5 h-5" />
-                {savedFacts.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
-                    {savedFacts.length}
-                  </span>
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
                 )}
               </Button>
-            )}
+              <Button
+                variant={factMode ? 'default' : 'ghost'}
+                size="icon"
+                onClick={() => {
+                  const next = !factMode;
+                  setFactMode(next);
+                  setCurrentFact(null);
+                  if (!next) setSavedFactsMenuOpen(false);
+                  toast.success(factMode ? 'Lock Memory Mode Activated' : 'Fact Mode Activated 📖');
+                }}
+                className="rounded-full"
+                title={factMode ? 'Switch to Lock Memory Mode' : 'Fact Where You Tap'}
+              >
+                {factMode ? <Lock className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+              </Button>
+              {factMode && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => setSavedFactsMenuOpen(true)}
+                  className="rounded-full shadow-lg bg-secondary hover:bg-secondary/90 border relative"
+                  title="Saved Facts"
+                >
+                  <BookOpen className="w-5 h-5" />
+                  {savedFacts.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
+                      {savedFacts.length}
+                    </span>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </motion.header>
+        </motion.header>
+      )}
 
       {/* Landing or Map */}
       {showLanding ? (
-        <div className="absolute inset-0 pt-28 px-6 md:px-10 flex flex-col items-center gap-8">
-          {/* Landing overlay UI */}
+        <div className="absolute inset-0">
+          {/* Cinematic half-earth looping video */}
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,#0B0F18_0%,#1A2235_100%)]"></div>
+          <video
+            className="absolute inset-0 w-[140%] h-[140%] object-cover object-[80%_60%] scale-110"
+            autoPlay
+            muted
+            playsInline
+            loop
+            poster="https://images.pexels.com/photos/87009/earth-blue-planet-globe-planet-87009.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1200&w=1600"
+          >
+            <source src="https://cdn.coverr.co/videos/coverr-earth-planet-9090/1080p.mp4" type="video/mp4" />
+            <source src="https://cdn.coverr.co/videos/coverr-earth-planet-9090/720p.mp4" type="video/mp4" />
+          </video>
+
+          {/* Overlays matching the provided mock */}
           <div className="absolute top-4 left-4 z-20 flex items-center gap-2 select-none">
-            <img src={mapxLogo} alt="Mapx" className="w-7 h-7 object-contain drop-shadow dark:invert" />
-            <span className="text-white/90 tracking-widest font-medium" style={{ textShadow: '0 0 10px rgba(79,195,247,0.5)' }}>MAPX</span>
+            <img src={mapxLogo} alt="Mapx" className="w-8 h-8 object-contain drop-shadow dark:invert" />
+            <span className="text-white/95 tracking-[0.35em] font-medium" style={{ textShadow: '0 0 10px rgba(79,195,247,0.45)' }}>MAPX</span>
           </div>
+
           <button
             onClick={() => setShowLanding(false)}
-            className="absolute top-6 right-6 z-20 text-white/90 tracking-[0.2em] hover:scale-105 transition-transform select-none"
-            style={{ textShadow: '0 0 16px rgba(79,195,247,0.5)' }}
+            className="absolute top-6 right-6 z-20 text-white/95 tracking-[0.25em] hover:scale-[1.04] transition-transform select-none"
+            style={{ textShadow: '0 0 16px rgba(79,195,247,0.55)' }}
           >
             DIVE IN →
           </button>
-          {/* Search */}
-          <div className="z-10">
-            <SearchBar onSelectLocation={handleSearchSelect} />
+
+          {/* City label (static for the video version) */}
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 select-none">
+            <span className="text-white/95 uppercase font-mono tracking-[0.35em] text-2xl" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>MUMBAI..</span>
           </div>
-          {/* Globe */}
-          <div className="w-full max-w-4xl aspect-square">
-            <Globe className="w-full h-full" />
-          </div>
-          {/* Subtext */}
-          <p className="text-sm text-muted-foreground">Drag to rotate. Releases resume auto-rotation. Day/night shading with subtle glow.</p>
-          {/* Footer caption */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 tracking-widest text-xs select-none" style={{ textShadow: '0 0 12px rgba(255,255,255,0.25)' }}>
+
+          {/* Bottom caption */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 text-white/85 tracking-[0.35em] text-sm select-none" style={{ textShadow: '0 0 12px rgba(255,255,255,0.35)' }}>
             ♡ FROM ARYAN PATIL
           </div>
         </div>
@@ -426,19 +434,31 @@ export default function Index() {
             onMapReady={(map) => { mapRef.current = map; }}
             anchoredLatLng={currentFact ? { lat: currentFact.coordinates.lat, lng: currentFact.coordinates.lng } : anchorCoords || undefined}
             overlayContent={(anchor) => (
-              (loadingFact || currentFact) ? (
-                <FactCard
-                  fact={currentFact}
-                  isLoading={loadingFact}
-                  onClose={() => {
-                    setCurrentFact(null);
-                    setLoadingFact(false);
-                    setAnchorCoords(null);
-                  }}
-                  onSave={saveFact}
-                  anchor={anchor}
-                />
-              ) : null
+              <>
+                {/* Small anchored dot to stick to clicked location */}
+                {anchor && (
+                  <div
+                    className="absolute z-[1001] pointer-events-none"
+                    style={{ left: `${anchor.x}px`, top: `${anchor.y}px`, transform: 'translate(-50%, -50%)' }}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-[#4FC3F7] ring-2 ring-white dark:ring-black shadow-[0_0_14px_rgba(79,195,247,0.8)]" />
+                  </div>
+                )}
+
+                {(loadingFact || currentFact) ? (
+                  <FactCard
+                    fact={currentFact}
+                    isLoading={loadingFact}
+                    onClose={() => {
+                      setCurrentFact(null);
+                      setLoadingFact(false);
+                      setAnchorCoords(null);
+                    }}
+                    onSave={saveFact}
+                    anchor={anchor}
+                  />
+                ) : null}
+              </>
             )}
           />
         </div>
@@ -608,7 +628,7 @@ export default function Index() {
 
       {/* Fact Card is now rendered inside the map overlay via SimpleMap.overlayContent */}
 
-       {/* Saved Facts Menu */}
+      {/* Saved Facts Menu */}
       <SavedFactsMenu
         isOpen={savedFactsMenuOpen}
         onClose={() => setSavedFactsMenuOpen(false)}
