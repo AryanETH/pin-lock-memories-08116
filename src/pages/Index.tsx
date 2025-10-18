@@ -354,7 +354,7 @@ export default function Index() {
               <img
                 src={mapxLogo}
                 alt="Logo"
-                className="w-8 h-8 object-contain dark:invert"
+                className="w-8 h-8 object-contain invert drop-shadow"
               />
             </motion.div>
 
