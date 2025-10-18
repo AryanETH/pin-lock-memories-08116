@@ -75,8 +75,9 @@ export default function Globe({ className, onCityChange }: GlobeProps) {
       const width = containerRef.current.clientWidth;
       const height = containerRef.current.clientHeight;
 
-      // Scene setup
+      // Scene setup with black background
       const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
       sceneRef.current = scene;
 
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -115,12 +116,12 @@ export default function Globe({ className, onCityChange }: GlobeProps) {
       scene.add(earth);
       earthRef.current = earth;
 
-      // Starfield
+      // Starfield with proper z-depth distribution
       const starVertices: number[] = [];
-      for (let i = 0; i < 50000; i++) {
-        const x = THREE.MathUtils.randFloatSpread(2000);
-        const y = THREE.MathUtils.randFloatSpread(2000);
-        const z = THREE.MathUtils.randFloatSpread(2000);
+      for (let i = 0; i < 10000; i++) {
+        const x = THREE.MathUtils.randFloatSpread(1000);
+        const y = THREE.MathUtils.randFloatSpread(1000);
+        const z = THREE.MathUtils.randFloatSpread(1000);
         starVertices.push(x, y, z);
       }
       const starGeometry = new THREE.BufferGeometry();
@@ -128,58 +129,47 @@ export default function Globe({ className, onCityChange }: GlobeProps) {
       
       const starMaterial = new THREE.PointsMaterial({
         map: createStarTexture(),
-        size: 1.5,
+        size: 2.5,
         transparent: true,
+        opacity: 0.8,
         blending: THREE.AdditiveBlending,
-        depthWrite: false
+        depthWrite: false,
+        depthTest: true
       });
       starMaterialRef.current = starMaterial;
       
       const stars = new THREE.Points(starGeometry, starMaterial);
       scene.add(stars);
 
-      // Comet spawning
+      // Comet spawning with better visibility
       const spawnComet = () => {
-        const cometGeo = new THREE.SphereGeometry(0.05, 16, 16);
-        const cometMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+        const cometGeo = new THREE.SphereGeometry(0.08, 16, 16);
+        const cometMat = new THREE.MeshBasicMaterial({ 
+          color: 0xffffff, 
+          transparent: true,
+          opacity: 1
+        });
         const comet = new THREE.Mesh(cometGeo, cometMat);
         
-        const zPlane = -20;
-        const spread = 50;
-        const startSide = Math.floor(Math.random() * 4);
-        let startX: number, startY: number, targetX: number, targetY: number;
-
-        switch(startSide) {
-          case 0: // top
-            startX = THREE.MathUtils.randFloatSpread(spread);
-            startY = spread / 2;
-            targetX = THREE.MathUtils.randFloatSpread(spread);
-            targetY = -spread / 2;
-            break;
-          case 1: // bottom
-            startX = THREE.MathUtils.randFloatSpread(spread);
-            startY = -spread / 2;
-            targetX = THREE.MathUtils.randFloatSpread(spread);
-            targetY = spread / 2;
-            break;
-          case 2: // left
-            startX = -spread / 2;
-            startY = THREE.MathUtils.randFloatSpread(spread);
-            targetX = spread / 2;
-            targetY = THREE.MathUtils.randFloatSpread(spread);
-            break;
-          default: // right
-            startX = spread / 2;
-            startY = THREE.MathUtils.randFloatSpread(spread);
-            targetX = -spread / 2;
-            targetY = THREE.MathUtils.randFloatSpread(spread);
-        }
+        // Spawn comets in a sphere around the scene
+        const angle1 = Math.random() * Math.PI * 2;
+        const angle2 = Math.random() * Math.PI * 2;
+        const radius = 40 + Math.random() * 20;
         
-        const startPos = new THREE.Vector3(startX, startY, zPlane);
-        comet.position.copy(startPos);
+        const startX = Math.cos(angle1) * Math.cos(angle2) * radius;
+        const startY = Math.sin(angle2) * radius;
+        const startZ = Math.sin(angle1) * Math.cos(angle2) * radius;
         
-        const targetPos = new THREE.Vector3(targetX, targetY, zPlane);
-        (comet as any).userData.velocity = new THREE.Vector3().subVectors(targetPos, startPos).normalize().multiplyScalar(0.2);
+        comet.position.set(startX, startY, startZ);
+        
+        // Random direction with slight bias towards center
+        const targetX = (Math.random() - 0.5) * 10;
+        const targetY = (Math.random() - 0.5) * 10;
+        const targetZ = (Math.random() - 0.5) * 10;
+        
+        const direction = new THREE.Vector3(targetX - startX, targetY - startY, targetZ - startZ).normalize();
+        (comet as any).userData.velocity = direction.multiplyScalar(0.15);
+        (comet as any).userData.startTime = Date.now();
 
         scene.add(comet);
         cometsRef.current.push(comet);
@@ -188,7 +178,7 @@ export default function Globe({ className, onCityChange }: GlobeProps) {
       const cometLoop = () => {
         if (mounted) {
           spawnComet();
-          setTimeout(cometLoop, 3000);
+          setTimeout(cometLoop, 2000);
         }
       };
       cometLoop();
@@ -234,13 +224,22 @@ export default function Globe({ className, onCityChange }: GlobeProps) {
           starMaterialRef.current.opacity = 0.6 + Math.sin(blinkTime) * 0.4;
         }
         
-        // Comet animation
+        // Comet animation with fading
         for (let i = cometsRef.current.length - 1; i >= 0; i--) {
           const comet = cometsRef.current[i];
-          comet.position.add((comet as any).userData.velocity);
-          (comet.material as THREE.MeshBasicMaterial).opacity = 0.7 + Math.sin(Date.now() * 0.005 + i) * 0.3;
-
-          if (comet.position.length() > 60) {
+          const userData = (comet as any).userData;
+          
+          comet.position.add(userData.velocity);
+          
+          // Calculate life time and fade out
+          const lifeTime = (Date.now() - userData.startTime) / 1000;
+          const maxLife = 10;
+          
+          if (lifeTime < maxLife) {
+            // Blinking effect
+            const opacity = 0.7 + Math.sin(Date.now() * 0.005 + i) * 0.3;
+            (comet.material as THREE.MeshBasicMaterial).opacity = opacity * (1 - lifeTime / maxLife);
+          } else {
             scene.remove(comet);
             cometsRef.current.splice(i, 1);
           }
