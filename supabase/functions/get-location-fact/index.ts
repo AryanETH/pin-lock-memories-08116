@@ -11,45 +11,43 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lng } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
+    const { lat, lng, mode = 'geography' } = await req.json();
+    const GEMINI_API_KEY = 'AIzaSyB2vRS-qntnQ5VXd6dj-Kv5dYQBmNXA8kM';
 
-    console.log(`Fetching fact for location: ${lat}, ${lng}`);
+    console.log(`Fetching ${mode} fact for location: ${lat}, ${lng}`);
 
-    // First, get a fun fact about the location
-    const factResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Customize prompt based on mode
+    const systemPrompt = mode === 'history'
+      ? 'You are a captivating historian. Provide fascinating historical facts about locations, including important events, famous figures, or historical significance. Always return facts in this exact JSON format: {"fact": "the fact text", "placeName": "name of the place", "distance": 0}. If the exact coordinates don\'t have historical significance, find the nearest historically important location and include the distance in kilometers.'
+      : 'You are a fun and engaging geography expert. Provide interesting geographical facts about locations, including natural features, climate, ecosystems, or geographical significance. Always return facts in this exact JSON format: {"fact": "the fact text", "placeName": "name of the place", "distance": 0}. If the exact coordinates don\'t have a famous place, find the nearest interesting location and include the distance in kilometers.';
+
+    const userPrompt = mode === 'history'
+      ? `Give me one fascinating historical fact about the location at coordinates ${lat}, ${lng}. Focus on historical events, important dates, famous people, or cultural heritage. If this exact location doesn't have historical significance, find the nearest historically important place and tell me about it. Include the distance from the original coordinates if it's different. Make it engaging and educational!`
+      : `Give me one fascinating geographical fact about the location at coordinates ${lat}, ${lng}. Focus on natural features, climate, ecosystems, or geographical characteristics. If this exact location doesn't have a notable landmark or geographical feature, find the nearest interesting place and tell me about it. Include the distance from the original coordinates if it's different. Make it engaging and educational!`;
+
+    // Call Gemini API directly
+    const factResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a fun and engaging geography expert. Provide interesting, unique facts about locations. Always return facts in this exact JSON format: {"fact": "the fact text", "placeName": "name of the place", "distance": 0}. If the exact coordinates don\'t have a famous place, find the nearest interesting location and include the distance in kilometers.'
-          },
-          {
-            role: 'user',
-            content: `Give me one fascinating, unique fun fact about the location at coordinates ${lat}, ${lng}. If this exact location doesn't have a notable landmark or interesting fact, find the nearest famous or interesting place and tell me about it. Include the distance from the original coordinates if it's different. Make it engaging and educational!`
-          }
-        ],
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}\n\n${userPrompt}`
+          }]
+        }]
       }),
     });
 
     if (!factResponse.ok) {
       const errorText = await factResponse.text();
-      console.error('AI gateway error:', factResponse.status, errorText);
+      console.error('Gemini API error:', factResponse.status, errorText);
       throw new Error('Failed to get location fact');
     }
 
     const factData = await factResponse.json();
-    const factText = factData.choices[0].message.content;
+    const factText = factData.candidates[0].content.parts[0].text;
     
     // Parse the JSON response
     let parsedFact;

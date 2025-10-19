@@ -3,6 +3,7 @@ import { Heart, Share2, Bookmark, X, ExternalLink, ChevronLeft, ChevronRight, Me
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
@@ -39,6 +40,10 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
   const [stats, setStats] = useState({ likes: 0, shares: 0, saves: 0 });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
+  const [activeTab, setActiveTab] = useState<'history' | 'geography'>('geography');
+  const [historyFact, setHistoryFact] = useState<LocationFact | null>(null);
+  const [geographyFact, setGeographyFact] = useState<LocationFact | null>(null);
+  const [loadingTab, setLoadingTab] = useState<'history' | 'geography' | null>(null);
 
   // Preconnect to Google to speed up "Know More"
   useEffect(() => {
@@ -185,6 +190,51 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
     }
   };
 
+  // Fetch fact for a specific mode
+  const fetchFactForMode = async (mode: 'history' | 'geography', coords: { lat: number; lng: number }) => {
+    if (mode === 'history' && historyFact) return;
+    if (mode === 'geography' && geographyFact) return;
+
+    setLoadingTab(mode);
+    try {
+      const response = await supabase.functions.invoke('get-location-fact', {
+        body: { lat: coords.lat, lng: coords.lng, mode }
+      });
+
+      if (response.data) {
+        if (mode === 'history') {
+          setHistoryFact(response.data);
+        } else {
+          setGeographyFact(response.data);
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching ${mode} fact:`, error);
+      toast.error(`Failed to load ${mode} fact`);
+    } finally {
+      setLoadingTab(null);
+    }
+  };
+
+  // Initialize with the first fact received
+  useEffect(() => {
+    if (fact && !geographyFact) {
+      setGeographyFact(fact);
+    }
+  }, [fact]);
+
+  // Fetch the other mode's fact when tab is switched
+  const handleTabChange = (value: string) => {
+    const newTab = value as 'history' | 'geography';
+    setActiveTab(newTab);
+    
+    if (fact) {
+      fetchFactForMode(newTab, fact.coordinates);
+    }
+  };
+
+  const currentFact = activeTab === 'history' ? historyFact : geographyFact;
+
   if (isLoading && !anchor) {
     return (
       <motion.div
@@ -218,22 +268,22 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
   const isAnchored = !!anchor;
 
   // Compute responsive width based on zoom and container size.
-  // Keeps the card readable but inside the map viewport.
+  // Keeps the card smaller and positioned near the click point
   const computedStyles: React.CSSProperties | undefined = isAnchored
     ? (() => {
         const zoom = (anchor as any).zoom as number;
         const cw = (anchor as any).containerWidth as number;
         const ch = (anchor as any).containerHeight as number;
 
-        // Desired width scales with zoom but clamped to container bounds
-        const baseWidth = 420; // px at typical zoom ~13-15
-        const scale = Math.max(0.7, Math.min(1.25, zoom / 14));
-        const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.9));
+        // Make card smaller - reduced base width
+        const baseWidth = 320; // Reduced from 420
+        const scale = Math.max(0.6, Math.min(1, zoom / 14));
+        const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.85));
 
         // Keep card fully inside container using translate clamping
         const left = Math.min(Math.max(anchor!.x, width * 0.5 + 8), cw - width * 0.5 - 8);
         // Vertical placement above the anchor with margin; clamp to top
-        const desiredTop = anchor!.y - 16; // top reference for transform
+        const desiredTop = anchor!.y - 16;
         const top = Math.max(16 + 8, Math.min(desiredTop, ch - 16));
 
         return {
@@ -266,104 +316,175 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         </button>
         
         <CardContent className="p-0">
-          {fact.imageUrls && fact.imageUrls.length > 0 && (
-            <div className="relative w-full h-48 overflow-hidden rounded-t-lg group">
-              <img
-                src={fact.imageUrls[currentImageIndex]}
-                alt={fact.placeName}
-                className="w-full h-full object-cover"
-              />
-              {fact.imageUrls.length > 1 && (
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="w-full grid grid-cols-2 rounded-none border-b">
+              <TabsTrigger value="geography">Geography</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="geography" className="m-0">
+              {loadingTab === 'geography' ? (
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-muted animate-pulse rounded" />
+                  <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+                  <div className="h-20 bg-muted animate-pulse rounded" />
+                </div>
+              ) : currentFact ? (
                 <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                    {fact.imageUrls.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={`w-2 h-2 rounded-full ${
-                          idx === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                        }`}
+                  {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
+                    <div className="relative w-full h-32 overflow-hidden group">
+                      <img
+                        src={currentFact.imageUrls[currentImageIndex]}
+                        alt={currentFact.placeName}
+                        className="w-full h-full object-cover"
                       />
-                    ))}
+                      {currentFact.imageUrls.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevImage}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronLeft className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={nextImage}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="p-4 space-y-2">
+                    <p className="text-xs text-foreground">
+                      <span className="font-bold">Place:</span> {currentFact.placeName}
+                    </p>
+                    {currentFact.distance > 0 && (
+                      <p className="text-xs text-foreground">
+                        <span className="font-bold">Distance:</span> {Math.round(currentFact.distance)} km
+                      </p>
+                    )}
+                    <p className="text-xs text-foreground leading-relaxed">
+                      {currentFact.fact}
+                    </p>
+
+                    <Button
+                      onClick={handleKnowMore}
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 h-8 text-xs"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      Know More
+                    </Button>
                   </div>
                 </>
-              )}
-            </div>
-          )}
-          
-          <div className="p-6">
-            <div className="space-y-2 mb-4">
-              <p className="text-sm text-foreground">
-                <span className="font-bold">Place Name:</span> {fact.placeName}
-              </p>
-              <p className="text-sm text-foreground">
-                <span className="font-bold">Distance:</span> {Math.round(fact.distance)} km
-              </p>
-              <p className="text-sm text-foreground leading-relaxed">
-                <span className="font-bold">Fact:</span> {fact.fact}
-              </p>
-            </div>
+              ) : null}
+            </TabsContent>
 
-            <Button
-              onClick={handleKnowMore}
-              variant="outline"
-              size="sm"
-              className="w-full mb-4"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Know More
-            </Button>
+            <TabsContent value="history" className="m-0">
+              {loadingTab === 'history' ? (
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-muted animate-pulse rounded" />
+                  <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+                  <div className="h-20 bg-muted animate-pulse rounded" />
+                </div>
+              ) : currentFact ? (
+                <>
+                  {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
+                    <div className="relative w-full h-32 overflow-hidden group">
+                      <img
+                        src={currentFact.imageUrls[currentImageIndex]}
+                        alt={currentFact.placeName}
+                        className="w-full h-full object-cover"
+                      />
+                      {currentFact.imageUrls.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevImage}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronLeft className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={nextImage}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="p-4 space-y-2">
+                    <p className="text-xs text-foreground">
+                      <span className="font-bold">Place:</span> {currentFact.placeName}
+                    </p>
+                    {currentFact.distance > 0 && (
+                      <p className="text-xs text-foreground">
+                        <span className="font-bold">Distance:</span> {Math.round(currentFact.distance)} km
+                      </p>
+                    )}
+                    <p className="text-xs text-foreground leading-relaxed">
+                      {currentFact.fact}
+                    </p>
+
+                    <Button
+                      onClick={handleKnowMore}
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 h-8 text-xs"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      Know More
+                    </Button>
+                  </div>
+                </>
+              ) : null}
+            </TabsContent>
+          </Tabs>
             
-            <div className="flex items-center gap-1 pt-4 border-t border-border">
+            <div className="flex items-center gap-1 px-4 pb-3 pt-2 border-t border-border">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLike}
-                className="flex-1 flex-col h-auto py-2"
+                className="flex-1 flex-col h-auto py-1"
               >
-                <Heart className="w-4 h-4 mb-1" />
-                <span className="text-xs">{stats.likes}</span>
+                <Heart className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">{stats.likes}</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleShare}
-                className="flex-1 flex-col h-auto py-2"
+                className="flex-1 flex-col h-auto py-1"
               >
-                <Share2 className="w-4 h-4 mb-1" />
-                <span className="text-xs">{stats.shares}</span>
+                <Share2 className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">{stats.shares}</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleSave}
-                className="flex-1 flex-col h-auto py-2"
+                className="flex-1 flex-col h-auto py-1"
               >
-                <Bookmark className="w-4 h-4 mb-1" />
-                <span className="text-xs">{stats.saves}</span>
+                <Bookmark className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">{stats.saves}</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowComments(true)}
-                className="flex-1 flex-col h-auto py-2"
+                className="flex-1 flex-col h-auto py-1"
               >
-                <MessageSquare className="w-4 h-4 mb-1" />
-                <span className="text-xs">Chat</span>
+                <MessageSquare className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">Chat</span>
               </Button>
             </div>
-          </div>
         </CardContent>
         
         {/* Pointing arrow toward the anchor (only for anchored variant) */}
