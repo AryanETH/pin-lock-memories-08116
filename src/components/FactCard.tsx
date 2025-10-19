@@ -173,8 +173,8 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
   };
 
   const handleKnowMore = () => {
-    if (!currentFact) return;
-    const query = encodeURIComponent(currentFact.placeName);
+    if (!fact) return;
+    const query = encodeURIComponent(`More information about ${fact.placeName}`);
     window.open(`https://www.google.com/search?q=${query}`, '_blank');
   };
 
@@ -317,9 +317,9 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="w-full grid grid-cols-2 rounded-t-lg rounded-b-none border-b bg-background">
-              <TabsTrigger value="history" className="text-lg font-bold">History</TabsTrigger>
-              <TabsTrigger value="geography" className="text-lg font-bold">Geography</TabsTrigger>
+            <TabsList className="w-full grid grid-cols-2 rounded-none border-b">
+              <TabsTrigger value="geography">Geography</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
 
             <TabsContent value="geography" className="m-0">
@@ -331,63 +331,54 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                 </div>
               ) : currentFact ? (
                 <>
-                  {/* Decorative Landscape Illustration */}
-                  <div className="w-full h-40 relative overflow-hidden">
-                    <svg viewBox="0 0 800 400" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-                      {/* Sky gradient */}
-                      <defs>
-                        <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" style={{ stopColor: '#87CEEB', stopOpacity: 1 }} />
-                          <stop offset="100%" style={{ stopColor: '#B0E0E6', stopOpacity: 1 }} />
-                        </linearGradient>
-                      </defs>
-                      <rect x="0" y="0" width="800" height="400" fill="url(#skyGradient)" />
-                      
-                      {/* Clouds */}
-                      <ellipse cx="150" cy="100" rx="60" ry="30" fill="white" opacity="0.9" />
-                      <ellipse cx="120" cy="110" rx="50" ry="25" fill="white" opacity="0.9" />
-                      <ellipse cx="180" cy="110" rx="50" ry="25" fill="white" opacity="0.9" />
-                      
-                      <ellipse cx="450" cy="80" rx="80" ry="35" fill="white" opacity="0.9" />
-                      <ellipse cx="410" cy="95" rx="60" ry="28" fill="white" opacity="0.9" />
-                      <ellipse cx="490" cy="95" rx="60" ry="28" fill="white" opacity="0.9" />
-                      
-                      <ellipse cx="700" cy="120" rx="50" ry="25" fill="white" opacity="0.9" />
-                      <ellipse cx="680" cy="130" rx="40" ry="20" fill="white" opacity="0.9" />
-                      <ellipse cx="720" cy="130" rx="40" ry="20" fill="white" opacity="0.9" />
-                      
-                      {/* Hills - back layer (lighter) */}
-                      <path d="M 0 300 Q 200 200 400 280 T 800 300 L 800 400 L 0 400 Z" fill="#9ACD32" opacity="0.6" />
-                      
-                      {/* Hills - middle layer */}
-                      <path d="M 0 320 Q 150 240 300 300 Q 450 360 600 300 Q 700 260 800 320 L 800 400 L 0 400 Z" fill="#8FBC3F" />
-                      
-                      {/* Hills - front layer (darker) */}
-                      <path d="M 0 350 Q 100 280 250 340 Q 400 400 550 340 Q 650 300 800 360 L 800 400 L 0 400 Z" fill="#6B8E23" />
-                    </svg>
-                  </div>
+                  {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
+                    <div className="relative w-full h-32 overflow-hidden group">
+                      <img
+                        src={currentFact.imageUrls[currentImageIndex]}
+                        alt={currentFact.placeName}
+                        className="w-full h-full object-cover"
+                      />
+                      {currentFact.imageUrls.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevImage}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronLeft className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={nextImage}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                   
-                  <div className="px-6 pb-6 pt-4 space-y-4">
-                    <div>
-                      <p className="text-base text-foreground leading-relaxed">
-                        <span className="font-bold text-lg">Place : </span>
-                        <span className="text-lg">{currentFact.placeName}</span>
+                  <div className="p-4 space-y-2">
+                    <p className="text-xs text-foreground">
+                      <span className="font-bold">Place:</span> {currentFact.placeName}
+                    </p>
+                    {currentFact.distance > 0 && (
+                      <p className="text-xs text-foreground">
+                        <span className="font-bold">Distance:</span> {Math.round(currentFact.distance)} km
                       </p>
-                    </div>
-                    
-                    <div>
-                      <p className="font-bold text-lg text-foreground mb-2">Fact:</p>
-                      <p className="text-sm text-foreground/90 leading-relaxed">
-                        {currentFact.fact}
-                      </p>
-                    </div>
+                    )}
+                    <p className="text-xs text-foreground leading-relaxed">
+                      {currentFact.fact}
+                    </p>
 
-                    <button
+                    <Button
                       onClick={handleKnowMore}
-                      className="w-full text-center text-base font-semibold text-foreground py-3 border-t-2 border-foreground hover:bg-muted/50 transition-colors"
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 h-8 text-xs"
                     >
-                      Know more
-                    </button>
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      Know More
+                    </Button>
                   </div>
                 </>
               ) : null}
@@ -402,68 +393,98 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                 </div>
               ) : currentFact ? (
                 <>
-                  {/* Decorative Landscape Illustration */}
-                  <div className="w-full h-40 relative overflow-hidden">
-                    <svg viewBox="0 0 800 400" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-                      {/* Sky gradient */}
-                      <defs>
-                        <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" style={{ stopColor: '#87CEEB', stopOpacity: 1 }} />
-                          <stop offset="100%" style={{ stopColor: '#B0E0E6', stopOpacity: 1 }} />
-                        </linearGradient>
-                      </defs>
-                      <rect x="0" y="0" width="800" height="400" fill="url(#skyGradient)" />
-                      
-                      {/* Clouds */}
-                      <ellipse cx="150" cy="100" rx="60" ry="30" fill="white" opacity="0.9" />
-                      <ellipse cx="120" cy="110" rx="50" ry="25" fill="white" opacity="0.9" />
-                      <ellipse cx="180" cy="110" rx="50" ry="25" fill="white" opacity="0.9" />
-                      
-                      <ellipse cx="450" cy="80" rx="80" ry="35" fill="white" opacity="0.9" />
-                      <ellipse cx="410" cy="95" rx="60" ry="28" fill="white" opacity="0.9" />
-                      <ellipse cx="490" cy="95" rx="60" ry="28" fill="white" opacity="0.9" />
-                      
-                      <ellipse cx="700" cy="120" rx="50" ry="25" fill="white" opacity="0.9" />
-                      <ellipse cx="680" cy="130" rx="40" ry="20" fill="white" opacity="0.9" />
-                      <ellipse cx="720" cy="130" rx="40" ry="20" fill="white" opacity="0.9" />
-                      
-                      {/* Hills - back layer (lighter) */}
-                      <path d="M 0 300 Q 200 200 400 280 T 800 300 L 800 400 L 0 400 Z" fill="#9ACD32" opacity="0.6" />
-                      
-                      {/* Hills - middle layer */}
-                      <path d="M 0 320 Q 150 240 300 300 Q 450 360 600 300 Q 700 260 800 320 L 800 400 L 0 400 Z" fill="#8FBC3F" />
-                      
-                      {/* Hills - front layer (darker) */}
-                      <path d="M 0 350 Q 100 280 250 340 Q 400 400 550 340 Q 650 300 800 360 L 800 400 L 0 400 Z" fill="#6B8E23" />
-                    </svg>
-                  </div>
+                  {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
+                    <div className="relative w-full h-32 overflow-hidden group">
+                      <img
+                        src={currentFact.imageUrls[currentImageIndex]}
+                        alt={currentFact.placeName}
+                        className="w-full h-full object-cover"
+                      />
+                      {currentFact.imageUrls.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevImage}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronLeft className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={nextImage}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                   
-                  <div className="px-6 pb-6 pt-4 space-y-4">
-                    <div>
-                      <p className="text-base text-foreground leading-relaxed">
-                        <span className="font-bold text-lg">Place : </span>
-                        <span className="text-lg">{currentFact.placeName}</span>
+                  <div className="p-4 space-y-2">
+                    <p className="text-xs text-foreground">
+                      <span className="font-bold">Place:</span> {currentFact.placeName}
+                    </p>
+                    {currentFact.distance > 0 && (
+                      <p className="text-xs text-foreground">
+                        <span className="font-bold">Distance:</span> {Math.round(currentFact.distance)} km
                       </p>
-                    </div>
-                    
-                    <div>
-                      <p className="font-bold text-lg text-foreground mb-2">Fact:</p>
-                      <p className="text-sm text-foreground/90 leading-relaxed">
-                        {currentFact.fact}
-                      </p>
-                    </div>
+                    )}
+                    <p className="text-xs text-foreground leading-relaxed">
+                      {currentFact.fact}
+                    </p>
 
-                    <button
+                    <Button
                       onClick={handleKnowMore}
-                      className="w-full text-center text-base font-semibold text-foreground py-3 border-t-2 border-foreground hover:bg-muted/50 transition-colors"
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 h-8 text-xs"
                     >
-                      Know more
-                    </button>
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      Know More
+                    </Button>
                   </div>
                 </>
               ) : null}
             </TabsContent>
           </Tabs>
+            
+            <div className="flex items-center gap-1 px-4 pb-3 pt-2 border-t border-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                className="flex-1 flex-col h-auto py-1"
+              >
+                <Heart className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">{stats.likes}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleShare}
+                className="flex-1 flex-col h-auto py-1"
+              >
+                <Share2 className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">{stats.shares}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className="flex-1 flex-col h-auto py-1"
+              >
+                <Bookmark className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">{stats.saves}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(true)}
+                className="flex-1 flex-col h-auto py-1"
+              >
+                <MessageSquare className="w-3 h-3 mb-0.5" />
+                <span className="text-[10px]">Chat</span>
+              </Button>
+            </div>
         </CardContent>
         
         {/* Pointing arrow toward the anchor (only for anchored variant) */}
