@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -11,97 +12,116 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lng, mode = 'geography' } = await req.json();
+    const { lat, lng, category = 'Facts' } = await req.json();
     const GEMINI_API_KEY = 'AIzaSyB2vRS-qntnQ5VXd6dj-Kv5dYQBmNXA8kM';
+    const UNSPLASH_ACCESS_KEY = Deno.env.get('UNSPLASH_ACCESS_KEY');
 
-    console.log(`Fetching ${mode} fact for location: ${lat}, ${lng}`);
+    // Create category-specific prompt
+    const categoryPrompts: Record<string, string> = {
+      'Facts': 'interesting facts',
+      'News': 'recent news or current events',
+      'History': 'historical information and significance',
+      'Geography': 'geographical features and characteristics',
+      'Education': 'educational institutions and learning opportunities',
+      'Current Affairs': 'current affairs and recent developments',
+      'Culture': 'cultural aspects, traditions, and heritage',
+      'Tourism': 'tourist attractions and travel information',
+      'Economy': 'economic status, industries, and development'
+    };
 
-    // Customize prompt based on mode
-    const systemPrompt = mode === 'history'
-      ? 'You are a captivating historian. Provide fascinating historical facts about locations, including important events, famous figures, or historical significance. Always return facts in this exact JSON format: {"fact": "the fact text", "placeName": "name of the place", "distance": 0}. If the exact coordinates don\'t have historical significance, find the nearest historically important location and include the distance in kilometers.'
-      : 'You are a fun and engaging geography expert. Provide interesting geographical facts about locations, including natural features, climate, ecosystems, or geographical significance. Always return facts in this exact JSON format: {"fact": "the fact text", "placeName": "name of the place", "distance": 0}. If the exact coordinates don\'t have a famous place, find the nearest interesting location and include the distance in kilometers.';
+    const categoryDescription = categoryPrompts[category] || category;
+    const systemPrompt = `You are an expert guide. Given coordinates (${lat}, ${lng}), provide 3-5 concise bullet points about ${categoryDescription} for the nearest significant location. Format your response as JSON: {"placeName": "name", "facts": ["fact1", "fact2", "fact3"], "distance": distance_in_km}`;
 
-    const userPrompt = mode === 'history'
-      ? `Give me one fascinating historical fact about the location at coordinates ${lat}, ${lng}. Focus on historical events, important dates, famous people, or cultural heritage. If this exact location doesn't have historical significance, find the nearest historically important place and tell me about it. Include the distance from the original coordinates if it's different. Make it engaging and educational!`
-      : `Give me one fascinating geographical fact about the location at coordinates ${lat}, ${lng}. Focus on natural features, climate, ecosystems, or geographical characteristics. If this exact location doesn't have a notable landmark or geographical feature, find the nearest interesting place and tell me about it. Include the distance from the original coordinates if it's different. Make it engaging and educational!`;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt }] }]
+        })
+      }
+    );
 
-    // Call Gemini API directly
-    const factResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `${systemPrompt}\n\n${userPrompt}`
-          }]
-        }]
-      }),
-    });
-
-    if (!factResponse.ok) {
-      const errorText = await factResponse.text();
-      console.error('Gemini API error:', factResponse.status, errorText);
+    if (!response.ok) {
       throw new Error('Failed to get location fact');
     }
 
-    const factData = await factResponse.json();
-    const factText = factData.candidates[0].content.parts[0].text;
-    
-    // Parse the JSON response
-    let parsedFact;
+    const data = await response.json();
+    const textContent = data.candidates[0].content.parts[0].text;
+
+    let parsedData;
     try {
-      parsedFact = JSON.parse(factText);
-    } catch {
-      // Fallback if AI doesn't return proper JSON
-      parsedFact = {
-        fact: factText,
-        placeName: 'This Location',
-        distance: 0
-      };
-    }
-
-    // Fetch images using Unsplash API with prioritized fallbacks
-    console.log('Fetching images for:', parsedFact.placeName);
-    const unsplashKey = Deno.env.get('UNSPLASH_ACCESS_KEY') || 'your-unsplash-key';
-    const headers = { 'Authorization': `Client-ID ${unsplashKey}` };
-    const queries = [
-      parsedFact.placeName,                                 // 1) Exact match
-      `${parsedFact.placeName} related`,                    // 2) Related photos
-      `${parsedFact.placeName} landmark OR scenery OR city` // 3) Relevant photos
-    ];
-
-    const imageUrlSet = new Set<string>();
-    for (const q of queries) {
-      try {
-        const res = await fetch(
-          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=6&orientation=landscape`,
-          { headers }
-        );
-        if (!res.ok) continue;
-        const data = await res.json();
-        const urls: string[] = (data.results || []).map((img: any) => img.urls?.regular).filter(Boolean);
-        urls.forEach(u => imageUrlSet.add(u));
-        if (imageUrlSet.size >= 3) break;
-      } catch (e) {
-        console.warn('Unsplash fetch failed for query', q, e);
+      parsedData = JSON.parse(textContent);
+    } catch (parseError) {
+      const placeNameMatch = textContent.match(/"placeName"\s*:\s*"([^"]*)"/);
+      const factsMatch = textContent.match(/"facts"\s*:\s*\[(.*?)\]/s);
+      const distanceMatch = textContent.match(/"distance"\s*:\s*([\d.]+)/);
+      
+      if (placeNameMatch && factsMatch) {
+        const factsArray = factsMatch[1]
+          .split(',')
+          .map((f: string) => f.trim().replace(/^"|"$/g, ''))
+          .filter((f: string) => f);
+        
+        parsedData = {
+          placeName: placeNameMatch[1],
+          facts: factsArray.length > 0 ? factsArray : ['Information not available'],
+          distance: distanceMatch ? parseFloat(distanceMatch[1]) : 0
+        };
+      } else {
+        throw new Error('Failed to parse response');
       }
     }
 
-    const imageUrls: string[] = Array.from(imageUrlSet).slice(0, 3);
+    const { placeName, facts, distance } = parsedData;
+
+    // Fetch 3-5 images from Unsplash
+    let imageUrls: string[] = [];
+    if (UNSPLASH_ACCESS_KEY && placeName) {
+      try {
+        const searchQueries = [
+          placeName,
+          `${placeName} landscape`,
+          `${placeName} architecture`,
+          `${placeName} landmark`,
+          `${placeName} aerial view`
+        ];
+
+        for (const query of searchQueries) {
+          if (imageUrls.length >= 5) break;
+
+          const unsplashResponse = await fetch(
+            `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
+            {
+              headers: {
+                'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
+              }
+            }
+          );
+
+          if (unsplashResponse.ok) {
+            const unsplashData = await unsplashResponse.json();
+            if (unsplashData.results && unsplashData.results.length > 0) {
+              imageUrls.push(unsplashData.results[0].urls.regular);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching Unsplash images:', error);
+      }
+    }
 
     return new Response(
       JSON.stringify({
-        fact: parsedFact.fact,
-        placeName: parsedFact.placeName,
-        distance: parsedFact.distance,
-        imageUrls: imageUrls,
+        facts,
+        placeName,
+        distance,
+        imageUrls,
+        category,
         coordinates: { lat, lng }
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error:', error);

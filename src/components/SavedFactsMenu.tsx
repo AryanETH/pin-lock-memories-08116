@@ -87,7 +87,7 @@ export default function SavedFactsMenu({
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground line-clamp-3 mb-3 ml-6">
-                        {fact.fact}
+                        {fact.facts && fact.facts.length > 0 ? fact.facts[0] : 'No information available'}
                       </p>
                       <div className="flex gap-2">
                         <Button
