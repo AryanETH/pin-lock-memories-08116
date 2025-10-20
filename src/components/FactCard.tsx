@@ -56,6 +56,21 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
   const [customCategory, setCustomCategory] = useState('');
   const [currentFact, setCurrentFact] = useState<LocationFact | null>(fact);
   const [loadingCategory, setLoadingCategory] = useState(false);
+  
+  const getRelatedTopics = (topic: string): string[] => {
+    const map: Record<string, string[]> = {
+      'Facts': ['History', 'Culture', 'Geography'],
+      'News': ['Current Affairs', 'Economy', 'Tourism'],
+      'History': ['Culture', 'Architecture', 'Tourism'],
+      'Geography': ['Climate', 'Architecture', 'Tourism'],
+      'Education': ['Economy', 'Culture', 'History'],
+      'Current Affairs': ['News', 'Economy', 'Culture'],
+      'Culture': ['History', 'Tourism', 'Cuisine'],
+      'Tourism': ['Culture', 'Landmarks', 'History'],
+      'Economy': ['Startups', 'Infrastructure', 'Education']
+    };
+    return map[topic] || ['History', 'Culture', 'Tourism'];
+  };
 
   useEffect(() => {
     if (fact) {
@@ -273,6 +288,8 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
       })()
     : undefined;
 
+  const activeTopic = selectedCategory || (customCategory.trim() ? customCategory.trim() : 'Facts');
+
   return (
     <motion.div
       initial={{ opacity: 0, y: isAnchored ? 10 : 50 }}
@@ -294,7 +311,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         </button>
         
         <CardContent className="p-0">
-          {/* Header with images carousel */}
+          {/* Header Section: images + place overlay */}
           {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
             <div className="relative w-full h-32 overflow-hidden group">
               <img
@@ -302,6 +319,15 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                 alt={currentFact.placeName}
                 className="w-full h-full object-cover"
               />
+              {/* Overlay with place name and distance */}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-white">
+                <h3 className="text-sm font-semibold drop-shadow">
+                  {currentFact.placeName}
+                </h3>
+                {currentFact.distance > 0 && (
+                  <p className="text-[10px] opacity-90">{Math.round(currentFact.distance)} km away</p>
+                )}
+              </div>
               {currentFact.imageUrls.length > 1 && (
                 <>
                   <button
@@ -332,15 +358,17 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
           )}
 
           <div className="p-3 space-y-3">
-            {/* Place name */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">{currentFact.placeName}</h3>
-              {currentFact.distance > 0 && (
-                <p className="text-xs text-muted-foreground">{Math.round(currentFact.distance)} km away</p>
-              )}
-            </div>
+            {/* Header fallback if no images */}
+            {!currentFact.imageUrls || currentFact.imageUrls.length === 0 ? (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{currentFact.placeName}</h3>
+                {currentFact.distance > 0 && (
+                  <p className="text-xs text-muted-foreground">{Math.round(currentFact.distance)} km away</p>
+                )}
+              </div>
+            ) : null}
 
-            {/* Categories */}
+            {/* Category Section */}
             <div className="space-y-2">
               <div className="flex flex-wrap gap-1.5">
                 {CATEGORIES.map(({ name, icon: Icon }) => (
@@ -381,7 +409,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
               </div>
             </div>
 
-            {/* Content */}
+            {/* Content Section */}
             {loadingCategory ? (
               <div className="space-y-2">
                 <div className="h-3 bg-muted animate-pulse rounded" />
@@ -399,7 +427,26 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
               </div>
             )}
 
-            {/* Action buttons */}
+            {/* Optional Add-ons: related topics */}
+            {!loadingCategory && (
+              <div className="pt-1">
+                <div className="flex flex-wrap gap-1.5">
+                  {getRelatedTopics(activeTopic).map((topic) => (
+                    <button
+                      key={topic}
+                      onClick={() => handleCategorySelect(topic)}
+                      disabled={loadingCategory}
+                      className="px-2 py-1 rounded-full text-[11px] bg-muted hover:bg-muted/80 text-muted-foreground"
+                      title={`Explore ${topic}`}
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
               <div className="flex items-center gap-2">
                 <Button
@@ -451,6 +498,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
           onClose={() => setShowComments(false)}
           placeName={currentFact.placeName}
           placeCoordinates={currentFact.coordinates}
+          topic={activeTopic}
         />
       )}
     </motion.div>

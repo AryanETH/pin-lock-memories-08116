@@ -40,7 +40,7 @@ export default function SavedFactsMenu({
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold">Saved Facts</h2>
+                <h2 className="text-lg font-bold">Saved Places</h2>
               </div>
               <button
                 onClick={onClose}
@@ -56,9 +56,9 @@ export default function SavedFactsMenu({
                   <div className="text-center py-12">
                     <BookOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
                     <p className="text-sm text-muted-foreground">
-                      No saved facts yet.
+                      No saved places yet.
                       <br />
-                      Tap "Save" on any fact card to add it here!
+                      Tap "Save" on any card to add it here!
                     </p>
                   </div>
                 ) : (

@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, placeName, coordinates, conversationHistory } = await req.json();
+    const { message, placeName, coordinates, conversationHistory, topic } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -22,9 +22,10 @@ serve(async (req) => {
     const messages = [
       {
         role: 'system',
-        content: `You are a helpful, friendly AI assistant answering questions about ${placeName}, located at coordinates (${coordinates.lat}, ${coordinates.lng}). 
-        
-Provide natural, conversational responses that are:
+        content: `You are a helpful, friendly AI assistant answering questions about ${placeName}, located at coordinates (${coordinates.lat}, ${coordinates.lng}).
+
+${topic ? `Focus specifically on the following topic: ${topic}.
+` : ''}Provide natural, conversational responses that are:
 - Informative and accurate
 - Friendly and engaging
 - Concise but complete
