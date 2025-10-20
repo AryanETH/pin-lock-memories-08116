@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import CommentPanel from './CommentPanel';
+import { GlowEffect } from '@/components/ui/glow-effect';
 
 export interface LocationFact {
   fact: string;
@@ -332,53 +333,58 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
               ) : currentFact ? (
                 <>
                   {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
-                    <div className="relative w-full h-32 overflow-hidden group">
+                    <div className="relative w-full aspect-video overflow-hidden group">
                       <img
                         src={currentFact.imageUrls[currentImageIndex]}
                         alt={currentFact.placeName}
                         className="w-full h-full object-cover"
                       />
+                      <GlowEffect
+                        colors={['#0894FF', '#C959DD', '#FF2E54', '#FF9004']}
+                        mode="rotate"
+                        blur="medium"
+                        duration={8}
+                      />
                       {currentFact.imageUrls.length > 1 && (
                         <>
                           <button
                             onClick={prevImage}
-                            className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           >
-                            <ChevronLeft className="w-3 h-3" />
+                            <ChevronLeft className="w-4 h-4" />
                           </button>
                           <button
                             onClick={nextImage}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           >
-                            <ChevronRight className="w-3 h-3" />
+                            <ChevronRight className="w-4 h-4" />
                           </button>
                         </>
                       )}
                     </div>
                   )}
                   
-                  <div className="p-4 space-y-2">
-                    <p className="text-xs text-foreground">
-                      <span className="font-bold">Place:</span> {currentFact.placeName}
-                    </p>
-                    {currentFact.distance > 0 && (
-                      <p className="text-xs text-foreground">
-                        <span className="font-bold">Distance:</span> {Math.round(currentFact.distance)} km
-                      </p>
-                    )}
-                    <p className="text-xs text-foreground leading-relaxed">
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-foreground">{currentFact.placeName}</h3>
+                      {currentFact.distance > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {Math.round(currentFact.distance)} km away
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">
                       {currentFact.fact}
                     </p>
 
-                    <Button
-                      onClick={handleKnowMore}
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2 h-8 text-xs"
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(currentFact.placeName)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-sm text-primary hover:underline mt-2"
                     >
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      Know More
-                    </Button>
+                      More info →
+                    </a>
                   </div>
                 </>
               ) : null}
@@ -394,95 +400,99 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
               ) : currentFact ? (
                 <>
                   {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
-                    <div className="relative w-full h-32 overflow-hidden group">
+                    <div className="relative w-full aspect-video overflow-hidden group">
                       <img
                         src={currentFact.imageUrls[currentImageIndex]}
                         alt={currentFact.placeName}
                         className="w-full h-full object-cover"
                       />
+                      <GlowEffect
+                        colors={['#0894FF', '#C959DD', '#FF2E54', '#FF9004']}
+                        mode="rotate"
+                        blur="medium"
+                        duration={8}
+                      />
                       {currentFact.imageUrls.length > 1 && (
                         <>
                           <button
                             onClick={prevImage}
-                            className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           >
-                            <ChevronLeft className="w-3 h-3" />
+                            <ChevronLeft className="w-4 h-4" />
                           </button>
                           <button
                             onClick={nextImage}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           >
-                            <ChevronRight className="w-3 h-3" />
+                            <ChevronRight className="w-4 h-4" />
                           </button>
                         </>
                       )}
                     </div>
                   )}
                   
-                  <div className="p-4 space-y-2">
-                    <p className="text-xs text-foreground">
-                      <span className="font-bold">Place:</span> {currentFact.placeName}
-                    </p>
-                    {currentFact.distance > 0 && (
-                      <p className="text-xs text-foreground">
-                        <span className="font-bold">Distance:</span> {Math.round(currentFact.distance)} km
-                      </p>
-                    )}
-                    <p className="text-xs text-foreground leading-relaxed">
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-foreground">{currentFact.placeName}</h3>
+                      {currentFact.distance > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {Math.round(currentFact.distance)} km away
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">
                       {currentFact.fact}
                     </p>
 
-                    <Button
-                      onClick={handleKnowMore}
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2 h-8 text-xs"
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(currentFact.placeName)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-sm text-primary hover:underline mt-2"
                     >
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      Know More
-                    </Button>
+                      More info →
+                    </a>
                   </div>
                 </>
               ) : null}
             </TabsContent>
           </Tabs>
             
-            <div className="flex items-center gap-1 px-4 pb-3 pt-2 border-t border-border">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className="flex-1 flex-col h-auto py-1"
-              >
-                <Heart className="w-3 h-3 mb-0.5" />
-                <span className="text-[10px]">{stats.likes}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleShare}
-                className="flex-1 flex-col h-auto py-1"
-              >
-                <Share2 className="w-3 h-3 mb-0.5" />
-                <span className="text-[10px]">{stats.shares}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSave}
-                className="flex-1 flex-col h-auto py-1"
-              >
-                <Bookmark className="w-3 h-3 mb-0.5" />
-                <span className="text-[10px]">{stats.saves}</span>
-              </Button>
+            <div className="flex items-center justify-between px-4 pb-3 pt-2 border-t border-border">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLike}
+                  className="p-0 h-auto hover:bg-transparent"
+                >
+                  <Heart className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="p-0 h-auto hover:bg-transparent"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSave}
+                  className="p-0 h-auto hover:bg-transparent"
+                >
+                  <Bookmark className="w-4 h-4" />
+                </Button>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowComments(true)}
-                className="flex-1 flex-col h-auto py-1"
+                className="flex items-center gap-1.5 text-xs px-2 h-auto py-1.5"
               >
-                <MessageSquare className="w-3 h-3 mb-0.5" />
-                <span className="text-[10px]">Chat</span>
+                <MessageSquare className="w-4 h-4" />
+                <span>Chat with AI</span>
               </Button>
             </div>
         </CardContent>
