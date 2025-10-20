@@ -17,13 +17,15 @@ interface CommentPanelProps {
   onClose: () => void;
   placeName: string;
   placeCoordinates: { lat: number; lng: number };
+  topic?: string;
 }
 
 export default function CommentPanel({ 
   isOpen, 
   onClose, 
   placeName,
-  placeCoordinates 
+  placeCoordinates,
+  topic
 }: CommentPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -82,7 +84,8 @@ export default function CommentPanel({
           message: input,
           placeName,
           coordinates: placeCoordinates,
-          conversationHistory: messages
+          conversationHistory: messages,
+          topic
         }
       });
 
@@ -129,8 +132,10 @@ export default function CommentPanel({
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-primary" />
                 <div>
-                  <h2 className="text-sm font-bold">Chat About</h2>
-                  <p className="text-xs text-muted-foreground truncate max-w-[200px]">{placeName}</p>
+                  <h2 className="text-sm font-bold">Deep Dive</h2>
+                  <p className="text-xs text-muted-foreground truncate max-w-[240px]">
+                    {placeName}{topic ? ` • ${topic}` : ''}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

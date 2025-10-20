@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Moon, Sun, Eye, Lock, Share2, Map as MapIcon, BookOpen } from 'lucide-react';
+import { MapPin, Moon, Sun, Eye, Lock, Share2, Map as MapIcon, BookOpen, Globe as Earth } from 'lucide-react';
 import SimpleMap from '@/components/SimpleMap';
 import mapxLogo from '@/assets/mapx-logo.png';
 import CreatePinModal from '@/components/CreatePinModal';
@@ -389,12 +389,12 @@ export default function Index() {
                   setFactMode(next);
                   setCurrentFact(null);
                   if (!next) setSavedFactsMenuOpen(false);
-                  toast.success(factMode ? 'Lock Memory Mode Activated' : 'Fact Mode Activated 📖');
+                  toast.success(factMode ? 'Lock Memory Mode Activated' : 'Discover Mode Activated 🌍');
                 }}
                 className="rounded-full"
-                title={factMode ? 'Switch to Lock Memory Mode' : 'Fact Where You Tap'}
+                title={factMode ? 'Switch to Lock Memory Mode' : 'Discover Where You Tap'}
               >
-                {factMode ? <Lock className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                {factMode ? <Lock className="w-5 h-5" /> : <Earth className="w-5 h-5" />}
               </Button>
               {factMode && (
                 <Button
@@ -402,7 +402,7 @@ export default function Index() {
                   size="icon"
                   onClick={() => setSavedFactsMenuOpen(true)}
                   className="rounded-full shadow-lg bg-secondary hover:bg-secondary/90 border relative"
-                  title="Saved Facts"
+                  title="Saved Places"
                 >
                   <BookOpen className="w-5 h-5" />
                   {savedFacts.length > 0 && (
