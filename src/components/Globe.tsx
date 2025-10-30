@@ -119,9 +119,9 @@ export default function Globe({ onCityChange }: GlobeProps) {
           ripple.lookAt(0, 0, 0);
           
           ripple.userData = {
-            startTime: Date.now() + i * 200,
+            startTime: Date.now() + i * 180,
             maxScale: 2.8 + i * 0.5,
-            duration: 4500, // fade out completely before next city (5s interval)
+            duration: 3500, // faster fade out - complete before next city
             baseColor: new THREE.Color(rippleColor),
             isDay
           };
@@ -271,10 +271,10 @@ export default function Globe({ onCityChange }: GlobeProps) {
             const pulse = Math.sin(elapsed * pulseSpeed);
             d.material.opacity = 0.9 + pulse * 0.1;
             
-            // Fade out completely before next city (at 4.5s, gone by 5s)
-            if (elapsed > 4500) {
-              d.material.opacity *= Math.max(0, 1 - (elapsed - 4500) / 500);
-              if (elapsed > 5000) {
+            // Fast fade out - start at 3.5s, completely gone by 4s
+            if (elapsed > 3500) {
+              d.material.opacity *= Math.max(0, 1 - (elapsed - 3500) / 500);
+              if (elapsed > 4000) {
                 scene.remove(d);
                 cityDots.splice(i, 1);
               }
@@ -282,7 +282,7 @@ export default function Globe({ onCityChange }: GlobeProps) {
           }
         }
         
-        // animate ripples - complete fade out before city change
+        // animate ripples - fast complete fade out before city change
         for (let i = ripples.length - 1; i >= 0; i--) {
           const r = ripples[i];
           const elapsed = now - r.userData.startTime;
@@ -292,13 +292,16 @@ export default function Globe({ onCityChange }: GlobeProps) {
             const scale = 1 + (r.userData.maxScale - 1) * progress;
             r.scale.set(scale, scale, 1);
             
-            // Smooth fade out over full duration
-            if (progress < 0.08) {
-              // Quick fade in
-              r.material.opacity = (progress / 0.08) * 0.85;
+            // Quick fade in, then rapid fade out
+            if (progress < 0.06) {
+              // Fast fade in
+              r.material.opacity = (progress / 0.06) * 0.9;
+            } else if (progress < 0.75) {
+              // Maintain visibility
+              r.material.opacity = 0.9;
             } else {
-              // Gradual fade out to 0
-              r.material.opacity = 0.85 * (1 - ((progress - 0.08) / 0.92));
+              // Rapid fade out at the end
+              r.material.opacity = 0.9 * (1 - ((progress - 0.75) / 0.25));
             }
             
             // Maintain consistent vibrant color
