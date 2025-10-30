@@ -66,30 +66,66 @@ export default function Globe({ onCityChange }: GlobeProps) {
       scene.add(stars);
 
       // ☄️ Tail-less comets behind the Earth
-      // 💫 City ripples
+      // 💫 City ripples and dots
       const ripples: any[] = [];
+      const cityDots: any[] = [];
+      
+      const isDayTime = (position: any) => {
+        // Light is at (5, 3, 5), check if position faces the light
+        const lightDir = new THREE.Vector3(5, 3, 5).normalize();
+        const posDir = position.clone().normalize();
+        const dot = posDir.dot(lightDir);
+        return dot > 0; // Positive dot product means facing the light
+      };
+      
       const createRipple = (lat: number, lon: number) => {
         const position = latLonToVec3(lat, lon, 2.02); // slightly above earth surface
+        const isDay = isDayTime(position);
         
-        // Create 3 concentric ripples for layered effect
-        for (let i = 0; i < 3; i++) {
+        // Determine colors based on day/night
+        const dotColor = isDay ? 0xffffff : 0x00d9ff; // white for day, cyan for night
+        const rippleStartColor = isDay ? 0xffffff : 0x00d9ff;
+        const rippleEndColor = isDay ? 0xcccccc : 0x333333;
+        
+        // Create central pulsing dot with glow
+        const dotGeo = new THREE.CircleGeometry(0.015, 32);
+        const dotMat = new THREE.MeshBasicMaterial({
+          color: dotColor,
+          transparent: true,
+          opacity: 0,
+          side: THREE.DoubleSide
+        });
+        const dot = new THREE.Mesh(dotGeo, dotMat) as any;
+        dot.position.copy(position);
+        dot.lookAt(0, 0, 0);
+        dot.userData = {
+          startTime: Date.now(),
+          isDay,
+          baseColor: dotColor
+        };
+        scene.add(dot);
+        cityDots.push(dot);
+        
+        // Create 4 ripples with staggered timing
+        for (let i = 0; i < 4; i++) {
           const rippleGeo = new THREE.RingGeometry(0.01, 0.02, 32);
           const rippleMat = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
+            color: rippleStartColor,
             transparent: true,
             opacity: 0,
             side: THREE.DoubleSide
           });
           const ripple = new THREE.Mesh(rippleGeo, rippleMat) as any;
           ripple.position.copy(position);
-          
-          // Orient ripple to face outward from earth center
           ripple.lookAt(0, 0, 0);
           
           ripple.userData = {
-            startTime: Date.now() + i * 200, // stagger ripples
-            maxScale: 2.5 + i * 0.5,
-            duration: 1500
+            startTime: Date.now() + i * 300, // stagger ripples more
+            maxScale: 3.0 + i * 0.3,
+            duration: 1800,
+            startColor: new THREE.Color(rippleStartColor),
+            endColor: new THREE.Color(rippleEndColor),
+            isDay
           };
           
           scene.add(ripple);
@@ -224,8 +260,31 @@ export default function Globe({ onCityChange }: GlobeProps) {
         requestAnimationFrame(animate);
         TWEEN.update(time);
         
-        // animate ripples
         const now = Date.now();
+        
+        // animate city dots (pulsing effect: 100% → 50% → 100%)
+        for (let i = cityDots.length - 1; i >= 0; i--) {
+          const d = cityDots[i];
+          const elapsed = now - d.userData.startTime;
+          
+          if (elapsed > 0) {
+            // Pulse between 100% and 50% opacity with glow
+            const pulseSpeed = 0.002;
+            const pulse = Math.sin(elapsed * pulseSpeed);
+            d.material.opacity = 0.75 + pulse * 0.25; // oscillates between 0.5 and 1.0
+            
+            // Remove dot after 5 seconds (when city changes)
+            if (elapsed > 5000) {
+              d.material.opacity *= Math.max(0, 1 - (elapsed - 5000) / 500);
+              if (elapsed > 5500) {
+                scene.remove(d);
+                cityDots.splice(i, 1);
+              }
+            }
+          }
+        }
+        
+        // animate ripples
         for (let i = ripples.length - 1; i >= 0; i--) {
           const r = ripples[i];
           const elapsed = now - r.userData.startTime;
@@ -235,16 +294,17 @@ export default function Globe({ onCityChange }: GlobeProps) {
             const scale = 1 + (r.userData.maxScale - 1) * progress;
             r.scale.set(scale, scale, 1);
             
-            // Fade in quickly, then fade out
-            if (progress < 0.2) {
-              r.material.opacity = progress / 0.2 * 0.8; // fade in to 0.8
+            // Smooth fade in and out with glow
+            if (progress < 0.15) {
+              r.material.opacity = (progress / 0.15) * 0.7; // fade in to 0.7
+            } else if (progress > 0.7) {
+              r.material.opacity = 0.7 * (1 - (progress - 0.7) / 0.3); // fade out smoothly
             } else {
-              r.material.opacity = 0.8 * (1 - (progress - 0.2) / 0.8); // fade out
+              r.material.opacity = 0.7; // maintain visibility
             }
             
-            // Change color from white to gray
-            const grayValue = Math.floor(255 - progress * 100); // 255 to 155
-            r.material.color.setRGB(grayValue / 255, grayValue / 255, grayValue / 255);
+            // Smooth color transition from start color to end color
+            r.material.color.lerpColors(r.userData.startColor, r.userData.endColor, progress);
           }
           
           if (elapsed > r.userData.duration) {
