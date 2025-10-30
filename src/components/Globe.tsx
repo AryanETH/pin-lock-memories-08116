@@ -66,6 +66,37 @@ export default function Globe({ onCityChange }: GlobeProps) {
       scene.add(stars);
 
       // ☄️ Tail-less comets behind the Earth
+      // 💫 City ripples
+      const ripples: any[] = [];
+      const createRipple = (lat: number, lon: number) => {
+        const position = latLonToVec3(lat, lon, 2.02); // slightly above earth surface
+        
+        // Create 3 concentric ripples for layered effect
+        for (let i = 0; i < 3; i++) {
+          const rippleGeo = new THREE.RingGeometry(0.01, 0.02, 32);
+          const rippleMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0,
+            side: THREE.DoubleSide
+          });
+          const ripple = new THREE.Mesh(rippleGeo, rippleMat) as any;
+          ripple.position.copy(position);
+          
+          // Orient ripple to face outward from earth center
+          ripple.lookAt(0, 0, 0);
+          
+          ripple.userData = {
+            startTime: Date.now() + i * 200, // stagger ripples
+            maxScale: 2.5 + i * 0.5,
+            duration: 1500
+          };
+          
+          scene.add(ripple);
+          ripples.push(ripple);
+        }
+      };
+
       const comets: any[] = [];
       const spawnComet = () => {
         const cometGeo = new THREE.SphereGeometry(0.06, 12, 12);
@@ -182,6 +213,7 @@ export default function Globe({ onCityChange }: GlobeProps) {
         const { lat, lon } = cityCoordinates[city];
         pointCameraTo(lat, lon);
         typeCity(city, showNextCity);
+        createRipple(lat, lon); // Add ripple effect
         if (onCityChange) onCityChange(city, lat, lon);
       }
 
@@ -191,6 +223,36 @@ export default function Globe({ onCityChange }: GlobeProps) {
       function animate(time: number) {
         requestAnimationFrame(animate);
         TWEEN.update(time);
+        
+        // animate ripples
+        const now = Date.now();
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const r = ripples[i];
+          const elapsed = now - r.userData.startTime;
+          
+          if (elapsed > 0) {
+            const progress = Math.min(elapsed / r.userData.duration, 1);
+            const scale = 1 + (r.userData.maxScale - 1) * progress;
+            r.scale.set(scale, scale, 1);
+            
+            // Fade in quickly, then fade out
+            if (progress < 0.2) {
+              r.material.opacity = progress / 0.2 * 0.8; // fade in to 0.8
+            } else {
+              r.material.opacity = 0.8 * (1 - (progress - 0.2) / 0.8); // fade out
+            }
+            
+            // Change color from white to gray
+            const grayValue = Math.floor(255 - progress * 100); // 255 to 155
+            r.material.color.setRGB(grayValue / 255, grayValue / 255, grayValue / 255);
+          }
+          
+          if (elapsed > r.userData.duration) {
+            scene.remove(r);
+            ripples.splice(i, 1);
+          }
+        }
+        
         // animate comets
         for (let i = comets.length - 1; i >= 0; i--) {
           const c = comets[i];
