@@ -82,9 +82,9 @@ export default function Globe({ onCityChange }: GlobeProps) {
         const position = latLonToVec3(lat, lon, 2.02); // slightly above earth surface
         const isDay = isDayTime(position);
         
-        // Determine colors based on day/night - cyan for day, gray for night
-        const dotColor = isDay ? 0x00d9ff : 0x888888; // cyan for day, gray for night
-        const rippleColor = isDay ? 0x00d9ff : 0x666666;
+        // Cyan for day, gray for night
+        const dotColor = isDay ? 0x00ffff : 0x999999;
+        const rippleColor = isDay ? 0x00ffff : 0x999999;
         
         // Create central solid dot with glow
         const dotGeo = new THREE.CircleGeometry(0.018, 32);
@@ -119,9 +119,9 @@ export default function Globe({ onCityChange }: GlobeProps) {
           ripple.lookAt(0, 0, 0);
           
           ripple.userData = {
-            startTime: Date.now() + i * 150, // faster stagger for rapid pulse
-            maxScale: 2.5 + i * 0.4,
-            duration: 1000, // faster fade out
+            startTime: Date.now() + i * 200,
+            maxScale: 2.8 + i * 0.5,
+            duration: 4500, // fade out completely before next city (5s interval)
             baseColor: new THREE.Color(rippleColor),
             isDay
           };
@@ -269,12 +269,12 @@ export default function Globe({ onCityChange }: GlobeProps) {
             // Solid dot with subtle pulse
             const pulseSpeed = 0.003;
             const pulse = Math.sin(elapsed * pulseSpeed);
-            d.material.opacity = 0.9 + pulse * 0.1; // subtle pulse between 0.8 and 1.0
+            d.material.opacity = 0.9 + pulse * 0.1;
             
-            // Remove dot after 5 seconds (when city changes)
-            if (elapsed > 5000) {
-              d.material.opacity *= Math.max(0, 1 - (elapsed - 5000) / 300);
-              if (elapsed > 5300) {
+            // Fade out completely before next city (at 4.5s, gone by 5s)
+            if (elapsed > 4500) {
+              d.material.opacity *= Math.max(0, 1 - (elapsed - 4500) / 500);
+              if (elapsed > 5000) {
                 scene.remove(d);
                 cityDots.splice(i, 1);
               }
@@ -282,7 +282,7 @@ export default function Globe({ onCityChange }: GlobeProps) {
           }
         }
         
-        // animate ripples - fast fade for dynamic radar pulse
+        // animate ripples - complete fade out before city change
         for (let i = ripples.length - 1; i >= 0; i--) {
           const r = ripples[i];
           const elapsed = now - r.userData.startTime;
@@ -292,21 +292,17 @@ export default function Globe({ onCityChange }: GlobeProps) {
             const scale = 1 + (r.userData.maxScale - 1) * progress;
             r.scale.set(scale, scale, 1);
             
-            // Fast fade with glow effect - rapid pulse
-            if (progress < 0.1) {
+            // Smooth fade out over full duration
+            if (progress < 0.08) {
               // Quick fade in
-              r.material.opacity = (progress / 0.1) * 0.8;
-            } else if (progress > 0.5) {
-              // Rapid fade out for dynamic feel
-              r.material.opacity = 0.8 * (1 - (progress - 0.5) / 0.5);
+              r.material.opacity = (progress / 0.08) * 0.85;
             } else {
-              r.material.opacity = 0.8;
+              // Gradual fade out to 0
+              r.material.opacity = 0.85 * (1 - ((progress - 0.08) / 0.92));
             }
             
-            // Maintain consistent color with slight transparency fade
-            const fadeProgress = Math.pow(progress, 1.5);
+            // Maintain consistent vibrant color
             r.material.color.copy(r.userData.baseColor);
-            r.material.opacity *= (1 - fadeProgress * 0.7);
           }
           
           if (elapsed > r.userData.duration) {
