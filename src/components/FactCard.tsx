@@ -268,8 +268,8 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         const cw = (anchor as any).containerWidth as number;
         const ch = (anchor as any).containerHeight as number;
 
-        // Base width for the card
-        const baseWidth = 480;
+        // Base width for the card - medium size
+        const baseWidth = 380;
         
         // Calculate scale based on zoom level (zoom typically ranges from 1-20)
         // At zoom 1: scale = 0.4, at zoom 10: scale = 0.7, at zoom 20: scale = 1
@@ -302,7 +302,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
       className={
         isAnchored
           ? 'absolute z-[1001] px-2 pointer-events-auto'
-          : 'fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-lg px-4'
+          : 'fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4'
       }
       style={isAnchored ? computedStyles : { maxWidth: 'calc(100vw - 2rem)', left: 'clamp(1rem, 50%, calc(100vw - 1rem))' }}
     >
@@ -317,7 +317,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         <CardContent className="p-0">
           {/* Header Section: images + place overlay */}
           {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
-            <div className="relative w-full h-24 overflow-hidden group">
+            <div className="relative w-full h-20 overflow-hidden group">
               <img
                 src={currentFact.imageUrls[currentImageIndex]}
                 alt={currentFact.placeName}
@@ -361,7 +361,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
             </div>
           )}
 
-          <div className="p-2.5 space-y-2">
+          <div className="p-2 space-y-2">
             {/* Header fallback if no images */}
             {!currentFact.imageUrls || currentFact.imageUrls.length === 0 ? (
               <div>
