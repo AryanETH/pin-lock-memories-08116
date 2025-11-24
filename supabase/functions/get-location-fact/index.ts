@@ -13,6 +13,7 @@ serve(async (req) => {
 
   try {
     const { lat, lng, category = 'Facts' } = await req.json();
+<<<<<<< HEAD
     console.log('Fetching location fact for:', { lat, lng, category });
     
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || 'AIzaSyCThIh6u12VNOZpfM2R_fHbKE4SDSXTR9g';
@@ -20,6 +21,13 @@ serve(async (req) => {
 
     if (!GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY is not configured');
+=======
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const UNSPLASH_ACCESS_KEY = Deno.env.get('UNSPLASH_ACCESS_KEY');
+
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
+>>>>>>> e7c1de30ab2a974f10037d386ccadee2af489998
     }
 
     // Create category-specific prompt
@@ -36,27 +44,46 @@ serve(async (req) => {
     };
 
     const categoryDescription = categoryPrompts[category] || category;
-    const systemPrompt = `You are an expert guide. Given coordinates (${lat}, ${lng}), provide 3-5 concise bullet points about ${categoryDescription} for the nearest significant location. Format your response as JSON: {"placeName": "name", "facts": ["fact1", "fact2", "fact3"], "distance": distance_in_km}`;
+    const userPrompt = `Given coordinates (${lat}, ${lng}), provide 3-5 concise bullet points about ${categoryDescription} for the nearest significant location. Format your response as JSON: {"placeName": "name", "facts": ["fact1", "fact2", "fact3"], "distance": distance_in_km}`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }] }]
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'You are an expert geographical guide. Always respond with valid JSON only.' },
+            { role: 'user', content: userPrompt }
+          ]
         })
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
+<<<<<<< HEAD
       console.error('Gemini API error:', response.status, errorText);
       throw new Error(`Failed to get location fact: ${response.status} - ${errorText}`);
+=======
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      if (response.status === 402) {
+        throw new Error('AI credits exhausted. Please add credits to continue.');
+      }
+      throw new Error(`Failed to get location fact: ${response.status}`);
+>>>>>>> e7c1de30ab2a974f10037d386ccadee2af489998
     }
 
     const data = await response.json();
-    const textContent = data.candidates[0].content.parts[0].text;
+    const textContent = data.choices[0].message.content;
 
     let parsedData;
     try {

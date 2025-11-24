@@ -268,22 +268,33 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         const cw = (anchor as any).containerWidth as number;
         const ch = (anchor as any).containerHeight as number;
 
+<<<<<<< HEAD
         // Make card smaller - reduced base width
         const baseWidth = 280; // Further reduced for compact size
         const scale = Math.max(0.65, Math.min(0.9, zoom / 14));
         const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.75));
+=======
+        // Base width for the card - medium size
+        const baseWidth = 380;
+        
+        // Calculate scale based on zoom level (zoom typically ranges from 1-20)
+        // At zoom 1: scale = 0.4, at zoom 10: scale = 0.7, at zoom 20: scale = 1
+        const scale = Math.max(0.3, Math.min(1, 0.3 + (zoom / 20) * 0.7));
+        
+        // Apply scale to width
+        const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.9));
+>>>>>>> e7c1de30ab2a974f10037d386ccadee2af489998
 
-        // Keep card fully inside container using translate clamping
-        const left = Math.min(Math.max(anchor!.x, width * 0.5 + 8), cw - width * 0.5 - 8);
-        // Vertical placement above the anchor with margin; clamp to top
-        const desiredTop = anchor!.y - 16;
-        const top = Math.max(16 + 8, Math.min(desiredTop, ch - 16));
+        // Position card at the anchor point (tap location)
+        const left = anchor!.x;
+        const top = anchor!.y - 16; // Offset slightly above the tap point
 
         return {
-          width,
+          width: `${baseWidth}px`,
           left: `${left}px`,
           top: `${top}px`,
-          transform: 'translate(-50%, calc(-100%))',
+          transform: `translate(-50%, calc(-100%)) scale(${scale})`,
+          transformOrigin: 'bottom center',
         } as React.CSSProperties;
       })()
     : undefined;
@@ -313,7 +324,11 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         <CardContent className="p-0">
           {/* Header Section: images + place overlay */}
           {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
+<<<<<<< HEAD
             <div className="relative w-full h-24 overflow-hidden group">
+=======
+            <div className="relative w-full h-20 overflow-hidden group">
+>>>>>>> e7c1de30ab2a974f10037d386ccadee2af489998
               <img
                 src={currentFact.imageUrls[currentImageIndex]}
                 alt={currentFact.placeName}
@@ -357,7 +372,11 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
             </div>
           )}
 
+<<<<<<< HEAD
           <div className="p-2.5 space-y-2">
+=======
+          <div className="p-2 space-y-2">
+>>>>>>> e7c1de30ab2a974f10037d386ccadee2af489998
             {/* Header fallback if no images */}
             {!currentFact.imageUrls || currentFact.imageUrls.length === 0 ? (
               <div>
