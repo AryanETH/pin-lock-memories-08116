@@ -43,6 +43,7 @@ export default function Index() {
   const [showLanding, setShowLanding] = useState(true);
   const [anchorCoords, setAnchorCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [currentLandingCity, setCurrentLandingCity] = useState<{ name: string; lat: number; lon: number } | null>(null);
+  const [stopGlobeAnimation, setStopGlobeAnimation] = useState(false);
  
   // No separate route; landing toggles to map view
   
@@ -67,6 +68,15 @@ export default function Index() {
     return Array.from(map.values());
   };
   useEffect(() => {
+    // Check if there are URL params (shared link) - if so, skip landing page
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasSharedLink = urlParams.has('lat') && urlParams.has('lng');
+    
+    if (hasSharedLink) {
+      setShowLanding(false);
+      setFactMode(true); // Enable fact mode for shared links
+    }
+    
     loadPins();
     getUserLocation();
     loadSavedFacts();
@@ -96,12 +106,18 @@ export default function Index() {
     toast.success('Fact deleted');
   };
 
-  // Handle URL params after pins are loaded
+  // Handle URL params after pins are loaded or when landing is skipped
   useEffect(() => {
-    if (pins.length > 0) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasSharedLink = urlParams.has('lat') && urlParams.has('lng');
+    
+    // Call handleUrlParams if we have a shared link and either:
+    // 1. Pins are loaded (for pinId lookup), or
+    // 2. There's no pinId in the URL (just coordinates)
+    if (hasSharedLink && (pins.length > 0 || !urlParams.has('pinId'))) {
       handleUrlParams();
     }
-  }, [pins]);
+  }, [pins, showLanding]);
 
   const handleUrlParams = async () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -287,6 +303,9 @@ export default function Index() {
   };
 
   const diveIntoCurrentCity = async () => {
+    // Stop the globe animation before transitioning
+    setStopGlobeAnimation(true);
+    
     // Transition to Fact Mode and focus on the currently displayed landing city
     setShowLanding(false);
     setFactMode(true);
@@ -354,7 +373,7 @@ export default function Index() {
               <img
                 src={mapxLogo}
                 alt="Logo"
-                className="w-8 h-8 object-contain invert drop-shadow"
+                className={`w-8 h-8 object-contain drop-shadow ${theme === 'dark' ? 'invert' : ''}`}
               />
             </motion.div>
 
@@ -423,6 +442,7 @@ export default function Index() {
           {/* 3D Globe */}
           <Globe
             onCityChange={(name, lat, lon) => setCurrentLandingCity({ name, lat, lon })}
+            stopAnimation={stopGlobeAnimation}
           />
 
           {/* Overlays */}

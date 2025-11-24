@@ -269,9 +269,9 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         const ch = (anchor as any).containerHeight as number;
 
         // Make card smaller - reduced base width
-        const baseWidth = 320; // Reduced from 420
-        const scale = Math.max(0.6, Math.min(1, zoom / 14));
-        const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.85));
+        const baseWidth = 280; // Further reduced for compact size
+        const scale = Math.max(0.65, Math.min(0.9, zoom / 14));
+        const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.75));
 
         // Keep card fully inside container using translate clamping
         const left = Math.min(Math.max(anchor!.x, width * 0.5 + 8), cw - width * 0.5 - 8);
@@ -313,7 +313,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         <CardContent className="p-0">
           {/* Header Section: images + place overlay */}
           {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
-            <div className="relative w-full h-32 overflow-hidden group">
+            <div className="relative w-full h-24 overflow-hidden group">
               <img
                 src={currentFact.imageUrls[currentImageIndex]}
                 alt={currentFact.placeName}
@@ -357,7 +357,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
             </div>
           )}
 
-          <div className="p-3 space-y-3">
+          <div className="p-2.5 space-y-2">
             {/* Header fallback if no images */}
             {!currentFact.imageUrls || currentFact.imageUrls.length === 0 ? (
               <div>
@@ -369,8 +369,8 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
             ) : null}
 
             {/* Category Section */}
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap gap-1">
                 {CATEGORIES.map(({ name, icon: Icon }) => (
                   <button
                     key={name}
@@ -389,20 +389,20 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
               </div>
               
               {/* Custom category input */}
-              <div className="flex gap-1.5">
+              <div className="flex gap-1">
                 <Input
                   placeholder="Custom topic..."
                   value={customCategory}
                   onChange={(e) => setCustomCategory(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCustomCategory()}
                   disabled={loadingCategory}
-                  className="h-7 text-xs"
+                  className="h-6 text-[11px] px-2"
                 />
                 <Button
                   size="sm"
                   onClick={handleCustomCategory}
                   disabled={!customCategory.trim() || loadingCategory}
-                  className="h-7 px-2 text-xs"
+                  className="h-6 px-2 text-[11px]"
                 >
                   Go
                 </Button>
@@ -411,15 +411,15 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
 
             {/* Content Section */}
             {loadingCategory ? (
-              <div className="space-y-2">
-                <div className="h-3 bg-muted animate-pulse rounded" />
-                <div className="h-3 bg-muted animate-pulse rounded w-4/5" />
-                <div className="h-3 bg-muted animate-pulse rounded w-3/5" />
+              <div className="space-y-1.5">
+                <div className="h-2.5 bg-muted animate-pulse rounded" />
+                <div className="h-2.5 bg-muted animate-pulse rounded w-4/5" />
+                <div className="h-2.5 bg-muted animate-pulse rounded w-3/5" />
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {currentFact.facts.map((fact, i) => (
-                  <div key={i} className="flex gap-2 text-xs text-foreground">
+                  <div key={i} className="flex gap-1.5 text-[11px] leading-snug text-foreground">
                     <span className="text-primary mt-0.5">•</span>
                     <span className="flex-1">{fact}</span>
                   </div>
@@ -429,8 +429,8 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
 
             {/* Optional Add-ons: related topics */}
             {!loadingCategory && (
-              <div className="pt-1">
-                <div className="flex flex-wrap gap-1.5">
+              <div className="pt-0.5">
+                <div className="flex flex-wrap gap-1">
                   {getRelatedTopics(activeTopic).map((topic) => (
                     <button
                       key={topic}
@@ -447,7 +447,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div className="flex items-center justify-between pt-1.5 border-t border-border">
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"

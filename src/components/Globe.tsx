@@ -3,10 +3,18 @@ import { cities as allCities } from "@/lib/cities";
 
 interface GlobeProps {
   onCityChange?: (name: string, lat: number, lon: number) => void;
+  stopAnimation?: boolean;
 }
 
-export default function Globe({ onCityChange }: GlobeProps) {
+export default function Globe({ onCityChange, stopAnimation }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const animationStoppedRef = useRef(false);
+
+  useEffect(() => {
+    if (stopAnimation) {
+      animationStoppedRef.current = true;
+    }
+  }, [stopAnimation]);
 
   useEffect(() => {
     const loadScript = (src: string) =>
@@ -232,6 +240,10 @@ export default function Globe({ onCityChange }: GlobeProps) {
         let i = 0;
         cityLabel.textContent = "";
         const interval = setInterval(() => {
+          if (animationStoppedRef.current) {
+            clearInterval(interval);
+            return;
+          }
           cityLabel.textContent = text.substring(0, i) + "..";
           i++;
           if (i > text.length) {
@@ -242,6 +254,7 @@ export default function Globe({ onCityChange }: GlobeProps) {
       }
 
       function showNextCity() {
+        if (animationStoppedRef.current) return;
         if (index >= cities.length) index = 0;
         const city = cities[index++];
         const { lat, lon } = cityCoordinates[city];

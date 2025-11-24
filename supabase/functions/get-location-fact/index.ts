@@ -13,8 +13,14 @@ serve(async (req) => {
 
   try {
     const { lat, lng, category = 'Facts' } = await req.json();
-    const GEMINI_API_KEY = 'AIzaSyB2vRS-qntnQ5VXd6dj-Kv5dYQBmNXA8kM';
+    console.log('Fetching location fact for:', { lat, lng, category });
+    
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || 'AIzaSyCThIh6u12VNOZpfM2R_fHbKE4SDSXTR9g';
     const UNSPLASH_ACCESS_KEY = Deno.env.get('UNSPLASH_ACCESS_KEY');
+
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
 
     // Create category-specific prompt
     const categoryPrompts: Record<string, string> = {
@@ -44,7 +50,9 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to get location fact');
+      const errorText = await response.text();
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Failed to get location fact: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
