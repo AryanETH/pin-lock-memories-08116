@@ -355,11 +355,15 @@ export default function Globe({ onCityChange, stopAnimation }: GlobeProps) {
 
       return () => {
         window.removeEventListener("resize", handleResize);
-        if (container.contains(renderer.domElement)) {
+        if (container && container.contains(renderer.domElement)) {
           container.removeChild(renderer.domElement);
         }
-        document.body.removeChild(cityLabel);
-        document.body.removeChild(footer);
+        if (document.body.contains(cityLabel)) {
+          document.body.removeChild(cityLabel);
+        }
+        if (document.body.contains(footer)) {
+          document.body.removeChild(footer);
+        }
         renderer.dispose();
         clearInterval(cometInterval);
       };
