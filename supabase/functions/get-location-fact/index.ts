@@ -44,7 +44,9 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to get location fact');
+      const errorText = await response.text();
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Failed to get location fact: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
