@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const { lat, lng, category = 'Facts' } = await req.json();
-    const GEMINI_API_KEY = 'AIzaSyB2vRS-qntnQ5VXd6dj-Kv5dYQBmNXA8kM';
+    const GEMINI_API_KEY = 'AIzaSyCThIh6u12VNOZpfM2R_fHbKE4SDSXTR9g';
     const UNSPLASH_ACCESS_KEY = Deno.env.get('UNSPLASH_ACCESS_KEY');
 
     // Create category-specific prompt
@@ -33,7 +33,7 @@ serve(async (req) => {
     const systemPrompt = `You are an expert guide. Given coordinates (${lat}, ${lng}), provide 3-5 concise bullet points about ${categoryDescription} for the nearest significant location. Format your response as JSON: {"placeName": "name", "facts": ["fact1", "fact2", "fact3"], "distance": distance_in_km}`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
