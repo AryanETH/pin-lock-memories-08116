@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Heart, Share2, Bookmark, X, MessageSquare, Newspaper, History, Globe, GraduationCap, TrendingUp, Landmark, Plane, DollarSign, Sparkles, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Heart, Share2, Bookmark, X, MessageSquare, Newspaper, History, Globe, GraduationCap, TrendingUp, Landmark, Plane, DollarSign, Sparkles, ChevronLeft, ChevronRight, ExternalLink, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -183,6 +183,18 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
     await updateStats('saves');
     onSave(currentFact);
     toast.success('Saved!');
+  };
+
+  const handleOpenSources = () => {
+    if (!currentFact?.sources || currentFact.sources.length === 0) {
+      toast.error('No sources available');
+      return;
+    }
+    
+    currentFact.sources.forEach(source => {
+      window.open(source.url, '_blank', 'noopener,noreferrer');
+    });
+    toast.success(`Opened ${currentFact.sources.length} source${currentFact.sources.length > 1 ? 's' : ''}`);
   };
 
   const nextImage = () => {
@@ -503,6 +515,16 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </Button>
+                {currentFact.sources && currentFact.sources.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleOpenSources}
+                    className="h-7 px-2 hover:bg-transparent hover:text-primary"
+                  >
+                    <Link className="w-3.5 h-3.5" />
+                  </Button>
+                )}
               </div>
               <Button
                 variant="ghost"
