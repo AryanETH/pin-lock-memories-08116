@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -45,16 +45,16 @@ serve(async (req) => {
       }
     );
     
-    let placeName = 'Unknown Location';
+    let locationPlaceName = 'Unknown Location';
     let placeDetails = '';
     
     if (geocodeResponse.ok) {
       const geocodeData = await geocodeResponse.json();
-      placeName = geocodeData.display_name || geocodeData.name || 'Unknown Location';
+      locationPlaceName = geocodeData.display_name || geocodeData.name || 'Unknown Location';
       
       // Build detailed context from address components
       const addr = geocodeData.address || {};
-      placeDetails = `Location: ${placeName}. `;
+      placeDetails = `Location: ${locationPlaceName}. `;
       if (addr.road) placeDetails += `Street: ${addr.road}. `;
       if (addr.suburb || addr.neighbourhood) placeDetails += `Area: ${addr.suburb || addr.neighbourhood}. `;
       if (addr.city || addr.town || addr.village) placeDetails += `City: ${addr.city || addr.town || addr.village}. `;
@@ -63,25 +63,31 @@ serve(async (req) => {
     }
 
     const categoryDescription = categoryPrompts[category] || category;
-    const systemPrompt = `You are a precise geographical expert with real-time knowledge. 
+    const systemPrompt = `You are a location information expert. Provide a clean, concise summary about ${categoryDescription} for this location.
 
-EXACT LOCATION: Coordinates (${lat}, ${lng})
+LOCATION: Coordinates (${lat}, ${lng})
 ${placeDetails}
 
-Task: Provide 3-5 highly accurate, specific bullet points about ${categoryDescription} for THIS EXACT LOCATION.
+CRITICAL RULES - READ CAREFULLY:
+1. Return EXACTLY 6 points total - NO MORE, NO LESS
+2. Each point = ONE complete paragraph (2-3 lines, roughly 2-3 sentences)
+3. NEVER split a single idea or paragraph into multiple points
+4. Each point must be self-contained and complete
+5. Focus on the TOP 6 most relevant aspects only
+6. Keep tone informative, engaging, and easy to read
+7. Each paragraph should be substantial but concise
 
-IMPORTANT RULES:
-1. Be PINPOINT ACCURATE - focus on this specific coordinate, not just the general area
-2. If it's a specific building/landmark, describe THAT place specifically
-3. If it's a street/area, describe what's notable at or near these exact coordinates
-4. Include current, factual information only
-5. Mention specific names of places, buildings, or landmarks if applicable
-6. Calculate distance as 0 km since we're describing the exact location
-
-Format your response as JSON:
+EXAMPLE FORMAT (follow this structure):
 {
-  "placeName": "exact name of the location",
-  "facts": ["specific fact 1", "specific fact 2", "specific fact 3"],
+  "placeName": "Location Name",
+  "facts": [
+    "First complete paragraph about one key aspect. This covers the topic fully in 2-3 sentences without breaking up.",
+    "Second complete paragraph about another aspect. Again, this is one unified idea presented clearly.",
+    "Third complete paragraph covering a different topic. Each point stands alone as a complete thought.",
+    "Fourth complete paragraph with another interesting fact. Keep it informative and engaging.",
+    "Fifth complete paragraph about yet another aspect. Make sure it's a full, unbroken idea.",
+    "Sixth and final complete paragraph. This wraps up the top 6 most important points about this location."
+  ],
   "distance": 0
 }`;
 
@@ -109,9 +115,15 @@ Format your response as JSON:
     }
 
     const data = await response.json();
-    const textContent = data.choices[0].message.content;
+    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    let parsedData;
+    interface ParsedFactData {
+      placeName: string;
+      facts: string[];
+      distance: number;
+    }
+
+    let parsedData: ParsedFactData;
     try {
       parsedData = JSON.parse(textContent);
     } catch (parseError) {
@@ -135,11 +147,66 @@ Format your response as JSON:
       }
     }
 
-    const { placeName, facts, distance } = parsedData;
+    let { placeName, facts, distance } = parsedData;
+
+    // Ensure exactly 6 facts
+    if (facts.length > 6) {
+      facts = facts.slice(0, 6);
+    } else if (facts.length < 6) {
+      // Pad with placeholder if needed (shouldn't happen with good prompt)
+      while (facts.length < 6) {
+        facts.push('Additional information about this location is being gathered.');
+      }
+    }
+
+    // Generate relevant source links
+    const sources: Array<{ name: string; url: string }> = [];
+    
+    // Extract location components for better search
+    const locationParts = placeName.split(',').map(p => p.trim());
+    const mainLocation = locationParts[0];
+    const searchQuery = encodeURIComponent(placeName);
+    const categoryQuery = encodeURIComponent(`${mainLocation} ${category}`);
+    
+    // Add Wikipedia link
+    sources.push({
+      name: 'Wikipedia',
+      url: `https://en.wikipedia.org/wiki/Special:Search?search=${searchQuery}`
+    });
+    
+    // Add Google search for the category
+    sources.push({
+      name: `Google - ${category}`,
+      url: `https://www.google.com/search?q=${categoryQuery}`
+    });
+    
+    // Add OpenStreetMap link
+    sources.push({
+      name: 'OpenStreetMap',
+      url: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=15`
+    });
+    
+    // Add category-specific sources
+    if (category === 'News' || category === 'Current Affairs') {
+      sources.push({
+        name: 'Google News',
+        url: `https://news.google.com/search?q=${searchQuery}`
+      });
+    } else if (category === 'Tourism') {
+      sources.push({
+        name: 'TripAdvisor',
+        url: `https://www.tripadvisor.com/Search?q=${searchQuery}`
+      });
+    } else if (category === 'History') {
+      sources.push({
+        name: 'Historical Info',
+        url: `https://www.google.com/search?q=${encodeURIComponent(`${mainLocation} history`)}`
+      });
+    }
 
     // Fetch 3-5 images from Unsplash with more specific queries
     let imageUrls: string[] = [];
-    if (placeName) {
+    if (placeName && placeName !== 'Unknown Location') {
       try {
         // Use Unsplash if key is available
         if (UNSPLASH_ACCESS_KEY) {
@@ -195,7 +262,8 @@ Format your response as JSON:
         distance,
         imageUrls,
         category,
-        coordinates: { lat, lng }
+        coordinates: { lat, lng },
+        sources
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

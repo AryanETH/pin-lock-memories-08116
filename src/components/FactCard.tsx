@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Heart, Share2, Bookmark, X, MessageSquare, Newspaper, History, Globe, GraduationCap, TrendingUp, Landmark, Plane, DollarSign, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, Share2, Bookmark, X, MessageSquare, Newspaper, History, Globe, GraduationCap, TrendingUp, Landmark, Plane, DollarSign, Sparkles, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ export interface LocationFact {
   imageUrls?: string[];
   category: string;
   coordinates: { lat: number; lng: number };
+  sources?: Array<{ name: string; url: string }>;
 }
 
 interface FactCardProps {
@@ -206,6 +207,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
       });
 
       if (response.data) {
+        console.log('Received fact data with sources:', response.data.sources);
         setCurrentFact(response.data);
         setCurrentImageIndex(0);
       }
@@ -260,22 +262,28 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
   // Anchored (inside a map overlay) vs fixed (global)
   const isAnchored = !!anchor;
 
-  // Compute responsive width based on zoom and container size.
-  // Keeps the card smaller and positioned near the click point
+  // Compute responsive width and scale based on zoom level
   const computedStyles: React.CSSProperties | undefined = isAnchored
     ? (() => {
         const zoom = (anchor as any).zoom as number;
         const cw = (anchor as any).containerWidth as number;
         const ch = (anchor as any).containerHeight as number;
 
-        // Make card smaller - reduced base width
-        const baseWidth = 280; // Further reduced for compact size
-        const scale = Math.max(0.65, Math.min(0.9, zoom / 14));
-        const width = Math.min(Math.round(baseWidth * scale), Math.round(cw * 0.75));
+        // Auto-adjustable card based on zoom level
+        // Base width: 320px, scales smoothly with zoom
+        const baseWidth = 320;
+        
+        // Improved zoom scaling: more responsive to zoom changes
+        // At zoom 10: scale ~0.7, at zoom 15: scale ~0.95, at zoom 20: scale ~1.1
+        const zoomScale = Math.max(0.6, Math.min(1.2, 0.5 + (zoom / 20)));
+        
+        const width = Math.min(
+          Math.round(baseWidth * zoomScale), 
+          Math.round(cw * 0.85)
+        );
 
-        // Keep card fully inside container using translate clamping
+        // Keep card fully inside container
         const left = Math.min(Math.max(anchor!.x, width * 0.5 + 8), cw - width * 0.5 - 8);
-        // Vertical placement above the anchor with margin; clamp to top
         const desiredTop = anchor!.y - 16;
         const top = Math.max(16 + 8, Math.min(desiredTop, ch - 16));
 
@@ -284,6 +292,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
           left: `${left}px`,
           top: `${top}px`,
           transform: 'translate(-50%, calc(-100%))',
+          fontSize: `${Math.max(0.7, Math.min(1, zoomScale))}rem`,
         } as React.CSSProperties;
       })()
     : undefined;
@@ -298,7 +307,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
       className={
         isAnchored
           ? 'absolute z-[1001] px-2 pointer-events-auto'
-          : 'fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4'
+          : 'fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-lg px-4'
       }
       style={isAnchored ? computedStyles : { maxWidth: 'calc(100vw - 2rem)', left: 'clamp(1rem, 50%, calc(100vw - 1rem))' }}
     >
@@ -311,9 +320,9 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
         </button>
         
         <CardContent className="p-0">
-          {/* Header Section: images + place overlay */}
+          {/* Header Section: images + place overlay - reduced height */}
           {currentFact.imageUrls && currentFact.imageUrls.length > 0 && (
-            <div className="relative w-full h-24 overflow-hidden group">
+            <div className="relative w-full h-20 overflow-hidden group">
               <img
                 src={currentFact.imageUrls[currentImageIndex]}
                 alt={currentFact.placeName}
@@ -357,7 +366,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
             </div>
           )}
 
-          <div className="p-2.5 space-y-2">
+          <div className="p-3 space-y-2.5">
             {/* Header fallback if no images */}
             {!currentFact.imageUrls || currentFact.imageUrls.length === 0 ? (
               <div>
@@ -417,13 +426,34 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                 <div className="h-2.5 bg-muted animate-pulse rounded w-3/5" />
               </div>
             ) : (
-              <div className="space-y-1">
-                {currentFact.facts.map((fact, i) => (
-                  <div key={i} className="flex gap-1.5 text-[11px] leading-snug text-foreground">
-                    <span className="text-primary mt-0.5">•</span>
+              <div className="space-y-1.5">
+                {currentFact.facts.slice(0, 6).map((fact, i) => (
+                  <div key={i} className="flex gap-2 text-xs leading-relaxed text-foreground">
+                    <span className="text-primary mt-0.5 flex-shrink-0">•</span>
                     <span className="flex-1">{fact}</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Sources Section */}
+            {!loadingCategory && currentFact.sources && currentFact.sources.length > 0 && (
+              <div className="pt-1 border-t border-border/50">
+                <p className="text-[10px] text-muted-foreground mb-1">Sources:</p>
+                <div className="flex flex-wrap gap-1">
+                  {currentFact.sources.map((source, i) => (
+                    <a
+                      key={i}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5" />
+                      <span>{source.name}</span>
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
 
