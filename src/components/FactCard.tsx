@@ -518,17 +518,16 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </Button>
-                {currentFact.sources && currentFact.sources.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleOpenSources}
-                    className="h-7 px-2 hover:bg-transparent hover:text-primary"
-                    title={`Open ${currentFact.sources.length} source${currentFact.sources.length > 1 ? 's' : ''}`}
-                  >
-                    <Link className="w-3.5 h-3.5" />
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleOpenSources}
+                  disabled={!currentFact.sources || currentFact.sources.length === 0}
+                  className="h-7 px-2 hover:bg-transparent hover:text-primary disabled:opacity-30"
+                  title={currentFact.sources && currentFact.sources.length > 0 ? `Open ${currentFact.sources.length} source${currentFact.sources.length > 1 ? 's' : ''}` : 'No sources available'}
+                >
+                  <Link className="w-3.5 h-3.5" />
+                </Button>
               </div>
               <Button
                 variant="ghost"
