@@ -490,12 +490,13 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
 
             {/* Action Buttons */}
             <div className="flex items-center justify-between pt-1.5 border-t border-border">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLike}
                   className="h-7 px-2 hover:bg-transparent hover:text-primary"
+                  title="Like"
                 >
                   <Heart className="w-3.5 h-3.5" />
                 </Button>
@@ -504,6 +505,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                   size="sm"
                   onClick={handleSave}
                   className="h-7 px-2 hover:bg-transparent hover:text-primary"
+                  title="Save"
                 >
                   <Bookmark className="w-3.5 h-3.5" />
                 </Button>
@@ -512,6 +514,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                   size="sm"
                   onClick={handleShare}
                   className="h-7 px-2 hover:bg-transparent hover:text-primary"
+                  title="Share"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </Button>
@@ -521,6 +524,7 @@ export default function FactCard({ fact, isLoading, onClose, onSave, anchor }: F
                     size="sm"
                     onClick={handleOpenSources}
                     className="h-7 px-2 hover:bg-transparent hover:text-primary"
+                    title={`Open ${currentFact.sources.length} source${currentFact.sources.length > 1 ? 's' : ''}`}
                   >
                     <Link className="w-3.5 h-3.5" />
                   </Button>
