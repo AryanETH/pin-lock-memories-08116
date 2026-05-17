@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Compressor</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: white;
+        }
+        .container {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #a855f7;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        button {
+            background: linear-gradient(135deg, #a855f7, #3b82f6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #2a2a2a;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #3b82f6);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        video {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Video Compressor for Mapplock</h1>
+        
+        <div class="info">
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>This will compress your earth-zoom.mp4 video</li>
+                <li>Choose quality: 1080p (recommended) or 720p (mobile)</li>
+                <li>Download the compressed version</li>
+                <li>Replace the original file in /public/</li>
+            </ol>
+        </div>
+
+        <div id="original-info" class="info hidden">
+            <p><strong>Original Video:</strong></p>
+            <p>Size: <span id="original-size"></span></p>
+            <p>Resolution: <span id="original-resolution"></span></p>
+            <p>Duration: <span id="original-duration"></span>s</p>
+        </div>
+
+        <video id="original-video" controls class="hidden">
+            <source src="/earth-zoom.mp4" type="video/mp4">
+        </video>
+
+        <div>
+            <button onclick="compressVideo('1080p')">Compress to 1080p (Recommended)</button>
+            <button onclick="compressVideo('720p')">Compress to 720p (Mobile)</button>
+        </div>
+
+        <div class="progress" id="progress">
+            <div class="progress-bar" id="progress-bar">0%</div>
+        </div>
+
+        <div id="result-info" class="info hidden">
+            <p><strong>Compressed Video:</strong></p>
+            <p>Size: <span id="compressed-size"></span></p>
+            <p>Reduction: <span id="size-reduction"></span></p>
+        </div>
+
+        <video id="compressed-video" controls class="hidden"></video>
+
+        <button id="download-btn" class="hidden" onclick="downloadVideo()">Download Compressed Video</button>
+    </div>
+
+    <script>
+        let originalVideo = document.getElementById('original-video');
+        let compressedBlob = null;
+        let originalSize = 0;
+
+        // Load original video info
+        originalVideo.addEventListener('loadedmetadata', () => {
+            fetch('/earth-zoom.mp4')
+                .then(res => res.blob())
+                .then(blob => {
+                    originalSize = blob.size;
+                    document.getElementById('original-size').textContent = (blob.size / 1024 / 1024).toFixed(2) + ' MB';
+                    document.getElementById('original-resolution').textContent = originalVideo.videoWidth + 'x' + originalVideo.videoHeight;
+                    document.getElementById('original-duration').textContent = originalVideo.duration.toFixed(2);
+                    document.getElementById('original-info').classList.remove('hidden');
+                    originalVideo.classList.remove('hidden');
+                });
+        });
+
+        async function compressVideo(quality) {
+            const progressDiv = document.getElementById('progress');
+            const progressBar = document.getElementById('progress-bar');
+            
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '10%';
+            progressBar.textContent = 'Loading...';
+
+            try {
+                // Fetch original video
+                const response = await fetch('/earth-zoom.mp4');
+                const blob = await response.blob();
+                
+                progressBar.style.width = '30%';
+                progressBar.textContent = 'Processing...';
+
+                // Create video element
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(blob);
+                await video.play();
+                video.pause();
+
+                // Set target dimensions
+                let targetWidth, targetHeight;
+                if (quality === '1080p') {
+                    targetWidth = 1920;
+                    targetHeight = 1080;
+                } else {
+                    targetWidth = 1280;
+                    targetHeight = 720;
+                }
+
+                // Calculate aspect ratio
+                const aspectRatio = video.videoWidth / video.videoHeight;
+                if (video.videoWidth > targetWidth) {
+                    targetHeight = Math.round(targetWidth / aspectRatio);
+                }
+
+                progressBar.style.width = '50%';
+                progressBar.textContent = 'Compressing...';
+
+                // Create canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                const ctx = canvas.getContext('2d');
+
+                // Use MediaRecorder to compress
+                const stream = canvas.captureStream(30);
+                const mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'video/webm;codecs=vp9',
+                    videoBitsPerSecond: quality === '1080p' ? 2500000 : 1500000
+                });
+
+                const chunks = [];
+                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                
+                mediaRecorder.onstop = () => {
+                    compressedBlob = new Blob(chunks, { type: 'video/webm' });
+                    
+                    // Show results
+                    const compressedSize = compressedBlob.size;
+                    const reduction = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+                    
+                    document.getElementById('compressed-size').textContent = (compressedSize / 1024 / 1024).toFixed(2) + ' MB';
+                    document.getElementById('size-reduction').textContent = reduction + '% smaller';
+                    document.getElementById('result-info').classList.remove('hidden');
+                    
+                    const compressedVideo = document.getElementById('compressed-video');
+                    compressedVideo.src = URL.createObjectURL(compressedBlob);
+                    compressedVideo.classList.remove('hidden');
+                    
+                    document.getElementById('download-btn').classList.remove('hidden');
+                    
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = 'Complete!';
+                    
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                    }, 2000);
+                };
+
+                mediaRecorder.start();
+
+                // Draw frames
+                video.currentTime = 0;
+                const fps = 30;
+                const frameDuration = 1 / fps;
+                let currentTime = 0;
+
+                const drawFrame = () => {
+                    if (currentTime >= video.duration) {
+                        mediaRecorder.stop();
+                        return;
+                    }
+
+                    video.currentTime = currentTime;
+                    ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+                    
+                    const progress = 50 + (currentTime / video.duration) * 45;
+                    progressBar.style.width = progress + '%';
+                    progressBar.textContent = Math.round(progress) + '%';
+                    
+                    currentTime += frameDuration;
+                    setTimeout(drawFrame, frameDuration * 1000);
+                };
+
+                video.onseeked = drawFrame;
+                video.currentTime = 0;
+
+            } catch (error) {
+                alert('Error compressing video: ' + error.message);
+                progressDiv.style.display = 'none';
+            }
+        }
+
+        function downloadVideo() {
+            if (!compressedBlob) return;
+            
+            const url = URL.createObjectURL(compressedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'earth-zoom-compressed.webm';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

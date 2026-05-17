@@ -9,7 +9,7 @@ import FileViewer from '@/components/FileViewer';
 import SearchBar from '@/components/SearchBar';
 import FactCard, { LocationFact } from '@/components/FactCard';
 import SavedFactsMenu from '@/components/SavedFactsMenu';
-import Globe from '@/components/Globe';
+import ScrollGlobe from '@/components/ScrollGlobe';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -18,6 +18,10 @@ import { calculateDistance, getCurrentPosition } from '@/lib/geo';
 import { toast } from 'sonner';
 import { Map as LeafletMap } from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
  
 
 export default function Index() {
@@ -44,6 +48,50 @@ export default function Index() {
   const [anchorCoords, setAnchorCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [currentLandingCity, setCurrentLandingCity] = useState<{ name: string; lat: number; lon: number } | null>(null);
   const [stopGlobeAnimation, setStopGlobeAnimation] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+ 
+  // Custom cursor tracking
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setCursorPosition({ x: e.clientX, y: e.clientY });
+    };
+
+    if (showLanding) {
+      window.addEventListener('mousemove', handleMouseMove);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [showLanding]);
+
+  // Scroll-based progress tracking with GSAP
+  useEffect(() => {
+    if (!showLanding || !scrollContainerRef.current) return;
+
+    // Enable body scroll
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+
+    // GSAP ScrollTrigger for smooth progress tracking
+    ScrollTrigger.create({
+      trigger: scrollContainerRef.current,
+      start: 'top top',
+      end: 'bottom bottom',
+      scrub: 1,
+      onUpdate: (self) => {
+        setScrollProgress(self.progress);
+      },
+    });
+
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [showLanding]);
  
   // No separate route; landing toggles to map view
   
@@ -354,7 +402,7 @@ export default function Index() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-background">
+    <div className="relative w-full bg-background" style={{ minHeight: showLanding ? '100vh' : '100vh', overflow: showLanding ? 'visible' : 'hidden' }}>
       {/* Header is hidden on landing to match the cinematic hero */}
       {!showLanding && (
         <motion.header
@@ -438,27 +486,128 @@ export default function Index() {
 
       {/* Landing or Map */}
       {showLanding ? (
-        <div className="absolute inset-0 bg-black">
-          {/* 3D Globe */}
-          <Globe
-            onCityChange={(name, lat, lon) => setCurrentLandingCity({ name, lat, lon })}
-            stopAnimation={stopGlobeAnimation}
-          />
-
-          {/* Overlays */}
-          <div className="absolute top-4 left-4 z-20 flex items-center gap-2 select-none">
-            <img src={mapxLogo} alt="Logo" className="w-9 h-9 object-contain drop-shadow invert" />
+        <div ref={scrollContainerRef} className="relative w-full bg-black" style={{ height: '200vh', overflow: 'visible' }}>
+          {/* Fixed 3D Globe Container with blur effect */}
+          <div 
+            className="fixed inset-0 w-full h-screen flex items-center justify-center bg-black overflow-hidden z-0 transition-all duration-300"
+            style={{
+              filter: `blur(${scrollProgress * 8}px)`,
+              opacity: 1 - (scrollProgress * 0.3)
+            }}
+          >
+            <ScrollGlobe scrollProgress={scrollProgress} />
           </div>
 
-          <button
-            onClick={diveIntoCurrentCity}
-            className="landing-font absolute top-6 right-6 z-20 text-white/95 tracking-[0.15em] hover:scale-[1.04] transition-transform select-none"
-            style={{ textShadow: '0 0 16px rgba(79,195,247,0.55)' }}
-          >
-            DIVE IN →
-          </button>
+          {/* Dark overlay that increases with scroll */}
+          <div 
+            className="fixed inset-0 bg-black pointer-events-none z-[5] transition-opacity duration-300"
+            style={{
+              opacity: scrollProgress * 0.4
+            }}
+          />
 
-          
+          {/* Overlay Content */}
+          <div className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+            {/* Logo at top */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute top-8 left-8"
+            >
+              <span className="text-3xl font-bold text-white drop-shadow-2xl">
+                Mapplock
+              </span>
+            </motion.div>
+
+            {/* Scroll Indicator - visible at start */}
+            {scrollProgress < 0.15 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1, duration: 1 }}
+                className="absolute bottom-12 flex flex-col items-center gap-2"
+              >
+                <span className="text-white/80 text-sm tracking-wider font-medium">SCROLL TO EXPLORE</span>
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <div className="w-6 h-10 border-2 border-white/50 rounded-full flex items-start justify-center p-2">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* CTA Button - visible at end */}
+            {scrollProgress > 0.75 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="pointer-events-auto"
+              >
+                <div className="text-center space-y-6 px-6">
+                  <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-4xl md:text-6xl lg:text-7xl font-black text-white"
+                    style={{
+                      textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
+                    }}
+                  >
+                    Lock Your Memories
+                    <br />
+                    <span className="text-white">
+                      To Places
+                    </span>
+                  </motion.h1>
+                  
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-white/90 text-lg md:text-xl lg:text-2xl max-w-2xl mx-auto"
+                    style={{
+                      textShadow: '0 2px 10px rgba(0,0,0,0.8)'
+                    }}
+                  >
+                    Pin your photos, videos, and moments to real-world locations
+                  </motion.p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <Button
+                      size="lg"
+                      onClick={() => {
+                        window.open('https://forms.gle/uZv5JwMBpkGsXjPUA', '_blank');
+                      }}
+                      className="bg-white hover:bg-gray-100 text-black font-bold px-12 py-8 text-xl rounded-none shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white"
+                    >
+                      Join Beta Waitlist
+                    </Button>
+                  </motion.div>
+
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                    className="text-white/60 text-sm"
+                    style={{
+                      textShadow: '0 2px 8px rgba(0,0,0,0.8)'
+                    }}
+                  >
+                    Limited spots available • Early access coming soon
+                  </motion.p>
+                </div>
+              </motion.div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="absolute inset-0 pt-24 pb-8 px-6 md:px-8 flex items-center justify-center">
