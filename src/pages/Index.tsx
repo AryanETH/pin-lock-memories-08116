@@ -51,6 +51,9 @@ export default function Index() {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [showScrollEndMessage, setShowScrollEndMessage] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
  
   // Custom cursor tracking
   useEffect(() => {
@@ -83,11 +86,32 @@ export default function Index() {
       scrub: 1,
       onUpdate: (self) => {
         setScrollProgress(self.progress);
+        setIsScrolling(true);
+        
+        // Clear existing timeout
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+        
+        // Set new timeout to detect when scrolling stops
+        scrollTimeoutRef.current = setTimeout(() => {
+          setIsScrolling(false);
+        }, 150);
+        
+        // Show message when user reaches the end and tries to scroll more
+        if (self.progress >= 0.99) {
+          setShowScrollEndMessage(true);
+        } else {
+          setShowScrollEndMessage(false);
+        }
       },
     });
 
     return () => {
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
@@ -402,26 +426,26 @@ export default function Index() {
   };
 
   return (
-    <div className="relative w-full bg-background" style={{ minHeight: showLanding ? '100vh' : '100vh', overflow: showLanding ? 'visible' : 'hidden' }}>
+    <div className="relative w-full bg-background" style={{ minHeight: '100vh', overflow: showLanding ? 'visible' : 'hidden' }}>
       {/* Header is hidden on landing to match the cinematic hero */}
       {!showLanding && (
         <motion.header
           initial={{ y: -100 }}
           animate={{ y: 0 }}
           transition={{ type: 'spring', damping: 20 }}
-          className="absolute top-0 left-0 right-0 z-10 p-4"
+          className="absolute top-0 left-0 right-0 z-10 p-2 md:p-4"
         >
-          <div className="px-6 py-3 flex items-center justify-center gap-6 rounded-2xl bg-background border shadow-md">
+          <div className="px-3 py-2 md:px-6 md:py-3 flex items-center justify-center gap-2 md:gap-6 rounded-xl md:rounded-2xl bg-background border shadow-md">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 md:gap-2"
             >
               <img
                 src={mapxLogo}
                 alt="Logo"
-                className={`w-8 h-8 object-contain drop-shadow ${theme === 'dark' ? 'invert' : ''}`}
+                className={`w-6 h-6 md:w-8 md:h-8 object-contain drop-shadow ${theme === 'dark' ? 'invert' : ''}`}
               />
             </motion.div>
 
@@ -429,23 +453,23 @@ export default function Index() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex-1 max-w-md"
+              className="flex-1 max-w-xs md:max-w-md"
             >
               <SearchBar onSelectLocation={handleSearchSelect} />
             </motion.div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                className="rounded-full"
+                className="rounded-full w-8 h-8 md:w-10 md:h-10"
                 title={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
               >
                 {theme === 'light' ? (
-                  <Moon className="w-5 h-5" />
+                  <Moon className="w-4 h-4 md:w-5 md:h-5" />
                 ) : (
-                  <Sun className="w-5 h-5" />
+                  <Sun className="w-4 h-4 md:w-5 md:h-5" />
                 )}
               </Button>
               <Button
@@ -458,22 +482,22 @@ export default function Index() {
                   if (!next) setSavedFactsMenuOpen(false);
                   toast.success(factMode ? 'Lock Memory Mode Activated' : 'Discover Mode Activated 🌍');
                 }}
-                className="rounded-full"
+                className="rounded-full w-8 h-8 md:w-10 md:h-10"
                 title={factMode ? 'Switch to Lock Memory Mode' : 'Discover Where You Tap'}
               >
-                {factMode ? <Lock className="w-5 h-5" /> : <Earth className="w-5 h-5" />}
+                {factMode ? <Lock className="w-4 h-4 md:w-5 md:h-5" /> : <Earth className="w-4 h-4 md:w-5 md:h-5" />}
               </Button>
               {factMode && (
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={() => setSavedFactsMenuOpen(true)}
-                  className="rounded-full shadow-lg bg-secondary hover:bg-secondary/90 border relative"
+                  className="rounded-full shadow-lg bg-secondary hover:bg-secondary/90 border relative w-8 h-8 md:w-10 md:h-10"
                   title="Saved Places"
                 >
-                  <BookOpen className="w-5 h-5" />
+                  <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
                   {savedFacts.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] md:text-xs rounded-full min-w-[16px] md:min-w-[20px] h-4 md:h-5 flex items-center justify-center font-bold px-1">
                       {savedFacts.length}
                     </span>
                   )}
@@ -495,7 +519,7 @@ export default function Index() {
               opacity: 1 - (scrollProgress * 0.3)
             }}
           >
-            <ScrollGlobe scrollProgress={scrollProgress} />
+            <ScrollGlobe scrollProgress={scrollProgress} isScrolling={isScrolling} />
           </div>
 
           {/* Dark overlay that increases with scroll */}
@@ -508,16 +532,34 @@ export default function Index() {
 
           {/* Overlay Content */}
           <div className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-            {/* Logo at top */}
+            {/* Logo at top left */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="absolute top-8 left-8"
+              className="absolute top-4 md:top-8 left-4 md:left-8"
             >
-              <span className="text-3xl font-bold text-white drop-shadow-2xl">
+              <span className="text-2xl md:text-3xl font-bold text-white drop-shadow-2xl">
                 Mapplock
               </span>
+            </motion.div>
+
+            {/* Join Beta Waitlist at top right */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="absolute top-4 md:top-8 right-4 md:right-8 pointer-events-auto"
+            >
+              <Button
+                size="sm"
+                onClick={() => {
+                  window.open('https://forms.gle/uZv5JwMBpkGsXjPUA', '_blank');
+                }}
+                className="bg-white hover:bg-gray-100 text-black font-bold px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm rounded-full shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white"
+              >
+                Join Beta Waitlist
+              </Button>
             </motion.div>
 
             {/* Scroll Indicator - visible at start */}
@@ -526,17 +568,51 @@ export default function Index() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1, duration: 1 }}
-                className="absolute bottom-12 flex flex-col items-center gap-2"
+                className="absolute bottom-8 md:bottom-12 flex flex-col items-center gap-2"
               >
-                <span className="text-white/80 text-sm tracking-wider font-medium">SCROLL TO EXPLORE</span>
+                <span className="text-white/80 text-xs md:text-sm tracking-wider font-medium">SCROLL TO EXPLORE</span>
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  <div className="w-6 h-10 border-2 border-white/50 rounded-full flex items-start justify-center p-2">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                  <div className="w-5 h-8 md:w-6 md:h-10 border-2 border-white/50 rounded-full flex items-start justify-center p-2">
+                    <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-white rounded-full" />
                   </div>
                 </motion.div>
+              </motion.div>
+            )}
+
+            {/* Scroll End Message - visible when user reaches the end */}
+            {showScrollEndMessage && scrollProgress >= 0.99 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.5 }}
+                className="absolute bottom-8 md:bottom-12 flex flex-col items-center gap-3"
+              >
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="text-white"
+                >
+                  <svg 
+                    width="32" 
+                    height="32" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="w-8 h-8 md:w-10 md:h-10"
+                  >
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                  </svg>
+                </motion.div>
+                <span className="text-white/90 text-sm md:text-base tracking-wider font-medium text-center px-4">
+                  There's only way up
+                </span>
               </motion.div>
             )}
 
@@ -546,14 +622,14 @@ export default function Index() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="pointer-events-auto"
+                className="pointer-events-auto px-4"
               >
-                <div className="text-center space-y-6 px-6">
+                <div className="text-center space-y-2 md:space-y-3">
                   <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="text-4xl md:text-6xl lg:text-7xl font-black text-white"
+                    className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-tight px-2"
                     style={{
                       textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
                     }}
@@ -569,7 +645,7 @@ export default function Index() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="text-white/90 text-lg md:text-xl lg:text-2xl max-w-2xl mx-auto"
+                    className="text-white/90 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl max-w-2xl mx-auto px-4 !mt-2 md:!mt-3"
                     style={{
                       textShadow: '0 2px 10px rgba(0,0,0,0.8)'
                     }}
@@ -581,23 +657,23 @@ export default function Index() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
+                    className="flex flex-col items-center gap-2 md:gap-3 !mt-4 md:!mt-6"
                   >
-                    <Button
-                      size="lg"
-                      onClick={() => {
-                        window.open('https://forms.gle/uZv5JwMBpkGsXjPUA', '_blank');
-                      }}
-                      className="bg-white hover:bg-gray-100 text-black font-bold px-12 py-8 text-xl rounded-none shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white"
-                    >
-                      Join Beta Waitlist
-                    </Button>
+                    <img 
+                      src="/google play.png" 
+                      alt="Google Play" 
+                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-64 md:h-64 lg:w-80 lg:h-80 object-contain drop-shadow-2xl"
+                    />
+                    <span className="text-white/80 text-base sm:text-lg md:text-2xl lg:text-3xl font-semibold tracking-wider">
+                      COMING SOON
+                    </span>
                   </motion.div>
 
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
-                    className="text-white/60 text-sm"
+                    className="text-white/60 text-xs sm:text-sm md:text-base px-4 !mt-2 md:!mt-3"
                     style={{
                       textShadow: '0 2px 8px rgba(0,0,0,0.8)'
                     }}
@@ -610,7 +686,7 @@ export default function Index() {
           </div>
         </div>
       ) : (
-        <div className="absolute inset-0 pt-24 pb-8 px-6 md:px-8 flex items-center justify-center">
+        <div className="absolute inset-0 pt-16 md:pt-24 pb-4 md:pb-8 px-2 md:px-6 lg:px-8 flex items-center justify-center">
           <SimpleMap
             pins={pins}
             onMapClick={handleMapClick}
@@ -627,7 +703,7 @@ export default function Index() {
                     className="absolute z-[1001] pointer-events-none"
                     style={{ left: `${anchor.x}px`, top: `${anchor.y}px`, transform: 'translate(-50%, -50%)' }}
                   >
-                    <div className="w-3 h-3 rounded-full bg-[#4FC3F7] ring-2 ring-white dark:ring-black shadow-[0_0_14px_rgba(79,195,247,0.8)]" />
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#4FC3F7] ring-1 md:ring-2 ring-white dark:ring-black shadow-[0_0_10px_rgba(79,195,247,0.8)] md:shadow-[0_0_14px_rgba(79,195,247,0.8)]" />
                   </div>
                 )}
 
