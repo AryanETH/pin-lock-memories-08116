@@ -634,10 +634,10 @@ export default function Index() {
                       textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
                     }}
                   >
-                    Lock Your Memories
+                    World's first geo-lock
                     <br />
                     <span className="text-white">
-                      To Places
+                      Lock geologically
                     </span>
                   </motion.h1>
                   
@@ -650,7 +650,7 @@ export default function Index() {
                       textShadow: '0 2px 10px rgba(0,0,0,0.8)'
                     }}
                   >
-                    Pin your photos, videos, and moments to real-world locations
+                    Lock & secure your apps, photos, and files to real-world locations
                   </motion.p>
 
                   <motion.div
