@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Test</title>
+    <style>
+        body {
+            margin: 0;
+            background: black;
+            color: white;
+            font-family: monospace;
+            padding: 20px;
+        }
+        #status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border: 1px solid white;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">Loading...</div>
+    <div id="container"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        function log(msg) {
+            console.log(msg);
+            statusDiv.innerHTML += '<br>' + msg;
+        }
+
+        async function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => {
+                    log('✓ Loaded: ' + src);
+                    resolve();
+                };
+                script.onerror = () => {
+                    log('✗ Failed: ' + src);
+                    reject();
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        async function init() {
+            try {
+                log('Starting Three.js load...');
+                
+                // Load Three.js
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (!window.THREE) {
+                    log('✗ THREE not available after load');
+                    return;
+                }
+                log('✓ THREE is available');
+                log('THREE.Scene: ' + (typeof THREE.Scene));
+                
+                // Load OrbitControls
+                await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (!THREE.OrbitControls) {
+                    log('✗ OrbitControls not available');
+                    return;
+                }
+                log('✓ OrbitControls is available');
+                
+                // Create scene
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setClearColor(0x000000, 1);
+                document.getElementById('container').appendChild(renderer.domElement);
+                
+                log('✓ Scene created');
+                
+                // Add light
+                const light = new THREE.DirectionalLight(0xffffff, 1.0);
+                light.position.set(5, 3, 5);
+                scene.add(light);
+                
+                // Create Earth
+                const textureLoader = new THREE.TextureLoader();
+                const earthTexture = textureLoader.load(
+                    'https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg',
+                    () => log('✓ Earth texture loaded')
+                );
+                const earthGeo = new THREE.SphereGeometry(4, 64, 64);
+                const earthMat = new THREE.MeshPhongMaterial({ map: earthTexture });
+                const earth = new THREE.Mesh(earthGeo, earthMat);
+                scene.add(earth);
+                
+                log('✓ Earth added to scene');
+                
+                // Position camera
+                camera.position.set(0, 0, 15);
+                camera.lookAt(0, 0, 0);
+                
+                // Animate
+                function animate() {
+                    requestAnimationFrame(animate);
+                    earth.rotation.y += 0.003;
+                    renderer.render(scene, camera);
+                }
+                animate();
+                
+                log('✓ Animation started - Earth should be visible!');
+                
+            } catch (error) {
+                log('✗ Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

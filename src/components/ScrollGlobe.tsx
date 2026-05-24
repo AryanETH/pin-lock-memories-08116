@@ -19,6 +19,8 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
   const naturalRotationRef = useRef(0);
   const lastScrollProgressRef = useRef(0);
 
+  console.log('ScrollGlobe rendered, scrollProgress:', scrollProgress);
+
   useEffect(() => {
     const loadScript = (src: string) =>
       new Promise<void>((resolve, reject) => {
@@ -47,16 +49,47 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
 
     async function init() {
       try {
-        // Check if Three.js is already available
-        const THREE = (window as any).THREE;
-        if (!THREE) {
+        console.log('ScrollGlobe init started');
+        // Load Three.js scripts if not already loaded
+        if (!(window as any).THREE) {
+          console.log('Loading Three.js scripts...');
           await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js");
+          
+          // Wait a bit to ensure THREE is available globally
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Verify THREE is loaded before loading OrbitControls
+          if (!(window as any).THREE) {
+            console.error('THREE failed to load from CDN');
+            return;
+          }
+          
+          console.log('THREE loaded, now loading OrbitControls...');
           await loadScript("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js");
+          
+          // Wait for OrbitControls to attach to THREE
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        const ThreeJS = (window as any).THREE;
+        const THREE = (window as any).THREE;
         const container = containerRef.current;
-        if (!container || !ThreeJS) return;
+        
+        if (!container) {
+          console.error('Container not available');
+          return;
+        }
+        
+        if (!THREE) {
+          console.error('Three.js not loaded');
+          return;
+        }
+        
+        if (!THREE.OrbitControls) {
+          console.error('OrbitControls not loaded');
+          return;
+        }
+
+        console.log('Three.js and OrbitControls loaded successfully, creating scene...');
 
         const scene = new THREE.Scene();
         sceneRef.current = scene;
@@ -173,8 +206,13 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
           cometsRef.current.push(createComet());
         }
 
-        // Controls
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        // Controls - OrbitControls is attached to THREE namespace
+        const OrbitControls = THREE.OrbitControls || (window as any).THREE.OrbitControls;
+        if (!OrbitControls) {
+          console.error('OrbitControls not found on THREE object');
+          return;
+        }
+        const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableZoom = false;
         controls.enablePan = false;
         controls.enableRotate = false; // Disable manual rotation
