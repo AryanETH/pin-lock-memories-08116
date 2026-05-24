@@ -166,7 +166,7 @@ export default function Index() {
     }
     
     loadPins();
-    getUserLocation();
+    // Removed automatic location access - user location will only be requested when needed
     loadSavedFacts();
   }, []);
 

@@ -1,0 +1,35 @@
+Terms of Use
+Please read carefully: These Terms of Service (these "Terms") constitute a legally binding agreement between you ("you" or "your") and Aitoyz ("we," "us" or "our"). These Terms govern your access and use of the Mapplock mobile application (the "App" or "Services").
+THESE TERMS CONTAIN VERY IMPORTANT INFORMATION REGARDING YOUR RIGHTS AND OBLIGATIONS, AS WELL AS CONDITIONS, LIMITATIONS, DISCLAIMERS OF WARRANTIES, AND EXCLUSIONS THAT MIGHT APPLY TO YOU. PLEASE READ THEM CAREFULLY.
+By downloading, installing, or using Mapplock in any manner, you agree to these Terms. IF YOU DO NOT AGREE TO ALL TERMS AND CONDITIONS IN THESE TERMS, DO NOT ACCESS AND IMMEDIATELY STOP USING THE SERVICES.
+1. Eligibility and Age Requirements
+1.1. You must be at least 13 years of age (or the minimum age required in your jurisdiction) to use our services. If you are under 18, you represent that your parent or legal guardian has reviewed and agreed to these Terms on your behalf.
+1.2. By using Mapplock, you represent and warrant that you have the legal capacity to enter into this binding agreement.
+2. Privacy Policy
+Our Privacy Policy explains how we collect, use, and protect your information, including your location data (required for Map-Gate) and camera access (required for Intruder Capture). By using Mapplock, you acknowledge that you have read and understood our Privacy Policy.
+3. Changes
+We reserve the right to modify these Terms at any time. We will inform you of material changes via the App before they take effect. By continuing to use Mapplock after revisions become effective, you agree to be bound by the revised terms.
+4. Your Use of the Services
+We grant you a limited, non-exclusive, non-transferable, revocable license to use Mapplock. You agree not to: 4.1. Use Mapplock for any unlawful purpose or in any manner that infringes on the privacy or intellectual property rights of others. 4.2. Attempt to reverse engineer, decompile, or bypass the security features of the App. 4.3. Use the Intruder Capture feature to harass or violate the privacy of individuals in a manner not consistent with security and personal protection. 4.4. Copy or modify the App’s source code or design. 4.5. Use any automated methods to scrape data from the Map or Service.
+5. Payment and Ad Removal
+Mapplock may offer a one-time payment option to remove advertisements.
+•
+This is a non-recurring payment. You will not be charged again for this specific feature.
+•
+Once the payment is processed, ads will be permanently removed for your account on the supported device.
+•
+Refund Policy: Payments for ad removal are generally non-refundable. Please review your purchase carefully. Management of payments is handled through the Google Play Store.
+6. Intellectual Property
+All rights in Mapplock, including source code, branding, the "Map-Gate" logic, UI design, and features, belong exclusively to Aitoyz. Unauthorized use of our brand elements or proprietary technology is strictly prohibited.
+7. Disclaimer of Warranties
+IMPORTANT: You expressly acknowledge that your use of Mapplock is at your own risk. 7.1. Location Accuracy: Mapplock relies on GPS and network signals for its "Map-Gate" feature. We do not guarantee that location detection will always be 100% accurate. Factors like signal drift, hardware limitations, or battery optimization may affect the App's ability to lock or unlock based on location. 7.2. Security: While we use encryption to protect your files, we do not warrant that the App is immune to all security threats or data loss if the device is tampered with or if the App is uninstalled without restoring files first. 7.3. The Services are provided "AS IS" and "AS AVAILABLE" without any warranties of merchantability or fitness for a particular purpose.
+8. Limitation of Liability
+To the maximum extent permitted by law, Aitoyz shall not be liable for any indirect, incidental, or consequential damages, including loss of data (photos, videos, or files) resulting from the use of the App, device failure, or uninstallation. In no event shall our total liability exceed the amount you paid (if any) to Aitoyz in the 12 months preceding the claim.
+9. Indemnification
+You agree to defend and hold harmless Aitoyz from any claims, damages, or expenses (including legal fees) arising from your misuse of the App, your violation of these Terms, or your infringement of any third-party rights (including privacy rights related to captured intruder photos).
+10. Termination
+10.1. You may terminate these Terms by uninstalling Mapplock and ceasing all use of the Service. Important: You must restore your encrypted files before uninstalling, or they will be permanently deleted. 10.2. We may terminate your access to Mapplock at any time if you violate these Terms or if your actions pose a legal risk to us.
+11. Governing Law
+These Terms and any disputes arising from them shall be governed by the laws of the jurisdiction where Aitoyz is located, without regard to conflict of law principles.
+12. Contact Us
+If you have any questions regarding these Terms, please contact us at: Email: hello@aitoyz.in Company: Aitoyz.in

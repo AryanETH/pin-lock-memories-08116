@@ -1,0 +1,95 @@
+Privacy Policy
+Last updated: May 03, 2026
+Hello, welcome to GeoVault - Location Based App Lock (“Application” or “We”), developed by GeoVault Security Team! This Privacy Policy is designed to help you understand how we collect, use, and protect the personal information you provide when accessing our services through our app.
+What kinds of information do we collect
+In order to protect your normal use and improve the quality of our services, we may collect the following personal information or ask for specific permissions from you when you access our services:
+Device information
+•
+The type of mobile device you are using
+•
+The IP address of your mobile device
+•
+Unique device identifiers (Android ID)
+•
+Your mobile OS version
+•
+System Language
+•
+Carrier Information
+Location Information (Map-Gate Feature)
+•
+Precise Location Data: To provide the core "Map-Gate" feature (unlocking apps based on your physical location), we collect and process your GPS coordinates.
+•
+Geofencing Data: We store the coordinates of the "Vaults" you create locally on your device to trigger the lock/unlock mechanism.
+•
+Note: This location data is processed locally to determine proximity. We do not track your movement history on our servers.
+Application information
+•
+Application’s Name and Version
+•
+List of Installed Packages (Required to allow you to select which apps to lock)
+•
+SDK Versioning
+Contact information
+•
+When you send feedback via email (hello@aitoyz.in) or provide us with an error report, we will obtain your username, email address, and email content to respond to you.
+Log & Usage Data
+•
+Lock Events: We store the package names of the locked apps in a local log to ensure the lock screen functions correctly.
+•
+Performance Data: We collect data on feature usage frequency and stability reports to optimize the app's performance. This data is never associated with your private files (photos, videos, etc.).
+Permissions We Request and Why
+Location Permission (Precise & Approximate)
+•
+Required for the Map-Gate feature. This allows the app to know if you are within a "Safe Zone" to automatically grant access or require a PIN/Pattern if you are outside the designated radius.
+Camera Permission
+•
+Used for the Intruder Selfie feature. When someone attempts to unlock your protected apps with the wrong PIN/Pattern, the app uses the front camera to capture a photo of the intruder.
+All Files Access Permission (Android 11+) / Storage Permission (Below 11)
+•
+This is a core feature. It allows GeoVault to move your sensitive photos, videos, and documents into a hidden, encrypted directory. We do not access or modify any files that you have not explicitly selected to hide.
+Usage Access Permission
+•
+Required for the App Locker. This permission allows the app to detect when a protected application is being launched so it can immediately display the lock screen.
+Overlay Permission (Display over other apps)
+•
+Required to show the security lock screen over your protected apps (like WhatsApp, Gallery, etc.) to prevent unauthorized access.
+Biometric Permission
+•
+Allows you to use your device's Fingerprint or Face Unlock for faster access to the vault. We do not store your biometric data; it is handled securely by the Android System.
+Accessibility Permission
+•
+Used solely to detect the opening of protected apps or specific chats to display the lock screen. We DO NOT monitor, collect, or share any private chat content or messages.
+Device Administrator Feature
+•
+This optional feature provides “Uninstall Protection”. It prevents intruders or accidental actions from deleting the app, which would result in the loss of your encrypted files.
+How do we use this information
+We use the collected information to:
+1.
+Provide the location-based security services.
+2.
+Improve app stability and fix bugs reported via logs.
+3.
+Show relevant, non-intrusive ads via third-party providers (you can opt-out in settings).
+Data Security: We take all reasonable steps to ensure your data is handled securely. We do not store, sell, or transfer your private content (photos, videos, etc.) to any cloud servers. Everything remains encrypted on your local device.
+Retention Time
+Your personal information and encrypted files are stored only for the duration of your use of the app.
+•
+Once you uninstall the app or clear its data, all local information is deleted.
+•
+Warning: Because we use high-level encryption, if you uninstall the app without restoring your files first, those files may be permanently lost.
+The Rights of Users
+•
+Withdraw Consent: You can revoke any permission (Location, Camera, etc.) at any time via system settings.
+•
+Deletion: You can delete your data by clearing the app cache or uninstalling the app.
+•
+Access: You can see all your secured files and vault locations within the app interface.
+Third-Party Services
+We cooperate with the following providers for analytics and advertising:
+•
+Admob Ads SDK: To display ads. Privacy Policy
+•
+Google Analytics SDK: To understand app performance. Privacy Policy
+Contact us
+If you have questions about this Privacy Policy, please contact us at: hello@aitoyz.in
