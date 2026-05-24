@@ -54,6 +54,7 @@ export default function Index() {
   const [showScrollEndMessage, setShowScrollEndMessage] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasReachedBottom, setHasReachedBottom] = useState(false);
  
   // Custom cursor tracking
   useEffect(() => {
@@ -98,24 +99,39 @@ export default function Index() {
           setIsScrolling(false);
         }, 150);
         
-        // Show message when user reaches the end and tries to scroll more
+        // Track if user has reached bottom
         if (self.progress >= 0.99) {
-          setShowScrollEndMessage(true);
-        } else {
-          setShowScrollEndMessage(false);
+          setHasReachedBottom(true);
         }
       },
     });
 
+    // Detect overscroll at bottom
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+      
+      // Show message only when user tries to scroll past the bottom
+      if (hasReachedBottom && scrollTop + clientHeight >= scrollHeight - 5) {
+        setShowScrollEndMessage(true);
+      } else {
+        setShowScrollEndMessage(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     return () => {
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      window.removeEventListener('scroll', handleScroll);
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
-  }, [showLanding]);
+  }, [showLanding, hasReachedBottom]);
  
   // No separate route; landing toggles to map view
   
@@ -510,7 +526,16 @@ export default function Index() {
 
       {/* Landing or Map */}
       {showLanding ? (
-        <div ref={scrollContainerRef} className="relative w-full bg-black" style={{ height: '200vh', overflow: 'visible' }}>
+        <div 
+          ref={scrollContainerRef} 
+          className="relative w-full bg-black touch-pan-y" 
+          style={{ 
+            height: '200vh', 
+            overflow: 'visible',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y'
+          }}
+        >
           {/* Fixed 3D Globe Container with blur effect */}
           <div 
             className="fixed inset-0 w-full h-screen flex items-center justify-center bg-black overflow-hidden z-0 transition-all duration-300"
@@ -537,8 +562,13 @@ export default function Index() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="absolute top-4 md:top-8 left-4 md:left-8"
+              className="absolute top-4 md:top-8 left-4 md:left-8 flex items-center gap-2 md:gap-3"
             >
+              <img 
+                src="/removed_background (12).png" 
+                alt="Mapplock Logo" 
+                className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-2xl"
+              />
               <span className="text-2xl md:text-3xl font-bold text-white drop-shadow-2xl">
                 Mapplock
               </span>
@@ -551,15 +581,22 @@ export default function Index() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="absolute top-4 md:top-8 right-4 md:right-8 pointer-events-auto"
             >
-              <Button
-                size="sm"
-                onClick={() => {
-                  window.open('https://forms.gle/uZv5JwMBpkGsXjPUA', '_blank');
-                }}
-                className="bg-white hover:bg-gray-100 text-black font-bold px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm rounded-full shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white"
-              >
-                Join Beta Waitlist
-              </Button>
+              <div className="relative">
+                {/* Animated glow effect */}
+                <div className="absolute inset-0 rounded-full bg-white/30 blur-md animate-pulse" />
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    window.open('https://forms.gle/uZv5JwMBpkGsXjPUA', '_blank');
+                  }}
+                  className="relative bg-white hover:bg-gray-100 text-black font-bold px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm rounded-full shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white animate-border-pulse"
+                  style={{
+                    animation: 'borderPulse 2s ease-in-out infinite'
+                  }}
+                >
+                  Join Beta Waitlist
+                </Button>
+              </div>
             </motion.div>
 
             {/* Scroll Indicator - visible at start */}
@@ -582,14 +619,14 @@ export default function Index() {
               </motion.div>
             )}
 
-            {/* Scroll End Message - visible when user reaches the end */}
-            {showScrollEndMessage && scrollProgress >= 0.99 && (
+            {/* Scroll End Message - visible only when user tries to scroll past bottom */}
+            {showScrollEndMessage && hasReachedBottom && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.5 }}
-                className="absolute bottom-8 md:bottom-12 flex flex-col items-center gap-3"
+                className="absolute bottom-8 md:bottom-12 flex flex-col items-center gap-3 z-20"
               >
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
@@ -624,12 +661,12 @@ export default function Index() {
                 transition={{ duration: 0.5 }}
                 className="pointer-events-auto px-4"
               >
-                <div className="text-center space-y-2 md:space-y-3">
+                <div className="text-center flex flex-col items-center space-y-1 md:space-y-2">
                   <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-tight px-2"
+                    className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-tight px-2 text-center"
                     style={{
                       textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
                     }}
@@ -645,7 +682,7 @@ export default function Index() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="text-white/90 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl max-w-2xl mx-auto px-4 !mt-2 md:!mt-3"
+                    className="text-white/90 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl max-w-2xl mx-auto px-4 text-center"
                     style={{
                       textShadow: '0 2px 10px rgba(0,0,0,0.8)'
                     }}
@@ -657,7 +694,7 @@ export default function Index() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="flex flex-col items-center gap-2 md:gap-3 !mt-4 md:!mt-6"
+                    className="flex flex-col items-center gap-2 md:gap-3 mt-3 md:mt-4"
                   >
                     <img 
                       src="/google play.png" 
@@ -673,7 +710,7 @@ export default function Index() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
-                    className="text-white/60 text-xs sm:text-sm md:text-base px-4 !mt-2 md:!mt-3"
+                    className="text-white/60 text-xs sm:text-sm md:text-base px-4 text-center"
                     style={{
                       textShadow: '0 2px 8px rgba(0,0,0,0.8)'
                     }}
