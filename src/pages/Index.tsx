@@ -55,38 +55,7 @@ export default function Index() {
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Preload critical assets
-  useEffect(() => {
-    const preloadAssets = async () => {
-      const imagesToPreload = [
-        '/google play.png',
-        '/removed_background (12).png'
-      ];
-
-      const imagePromises = imagesToPreload.map((src) => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = resolve;
-          img.onerror = resolve; // Continue even if image fails
-          img.src = src;
-        });
-      });
-
-      try {
-        await Promise.all(imagePromises);
-        // Small delay to ensure smooth transition
-        setTimeout(() => setIsLoading(false), 800);
-      } catch (error) {
-        console.error('Error preloading assets:', error);
-        setIsLoading(false);
-      }
-    };
-
-    preloadAssets();
-  }, []);
- 
   // Custom cursor tracking
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -473,47 +442,7 @@ export default function Index() {
   };
 
   return (
-    <>
-      {/* Loading Screen - only shows briefly */}
-      {isLoading && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col items-center gap-4"
-          >
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <img 
-                src="/removed_background (12).png" 
-                alt="Mapplock Logo" 
-                className="w-12 h-12 md:w-16 md:h-16 object-contain"
-              />
-              <span className="text-3xl md:text-4xl font-bold text-white">
-                Mapplock
-              </span>
-            </div>
-            
-            {/* Loading spinner */}
-            <div className="relative w-12 h-12">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 border-3 border-white/20 border-t-white rounded-full"
-              />
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-
-      <div className="relative w-full bg-background" style={{ minHeight: '100vh', overflow: showLanding ? 'visible' : 'hidden' }}>
+    <div className="relative w-full bg-background" style={{ minHeight: '100vh', overflow: showLanding ? 'visible' : 'hidden' }}>
       {/* Header is hidden on landing to match the cinematic hero */}
       {!showLanding && (
         <motion.header
@@ -1008,6 +937,5 @@ export default function Index() {
       />
      
      </div>
-    </>
   );
 }
