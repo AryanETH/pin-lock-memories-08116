@@ -56,19 +56,17 @@ export default function Index() {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   // Preload critical assets
   useEffect(() => {
     const preloadAssets = async () => {
       const imagesToPreload = [
         '/google play.png',
-        '/removed_background (12).png',
-        'https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg'
+        '/removed_background (12).png'
       ];
 
       const imagePromises = imagesToPreload.map((src) => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const img = new Image();
           img.onload = resolve;
           img.onerror = resolve; // Continue even if image fails
@@ -76,33 +74,12 @@ export default function Index() {
         });
       });
 
-      // Preload Three.js scripts
-      const scriptPromises = [
-        'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-        'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'
-      ].map((src) => {
-        return new Promise((resolve) => {
-          const existing = document.querySelector(`script[src="${src}"]`);
-          if (existing) {
-            resolve(true);
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = src;
-          script.onload = () => resolve(true);
-          script.onerror = () => resolve(false);
-          document.head.appendChild(script);
-        });
-      });
-
       try {
-        await Promise.all([...imagePromises, ...scriptPromises]);
-        setAssetsLoaded(true);
+        await Promise.all(imagePromises);
         // Small delay to ensure smooth transition
-        setTimeout(() => setIsLoading(false), 500);
+        setTimeout(() => setIsLoading(false), 800);
       } catch (error) {
         console.error('Error preloading assets:', error);
-        setAssetsLoaded(true);
         setIsLoading(false);
       }
     };
@@ -497,42 +474,41 @@ export default function Index() {
 
   return (
     <>
-      {/* Loading Screen */}
+      {/* Loading Screen - only shows briefly */}
       {isLoading && (
         <motion.div
           initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.3 }}
           className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
         >
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col items-center gap-6"
+            transition={{ duration: 0.3 }}
+            className="flex flex-col items-center gap-4"
           >
             {/* Logo */}
             <div className="flex items-center gap-3">
               <img 
                 src="/removed_background (12).png" 
                 alt="Mapplock Logo" 
-                className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-2xl"
+                className="w-12 h-12 md:w-16 md:h-16 object-contain"
               />
-              <span className="text-4xl md:text-5xl font-bold text-white drop-shadow-2xl">
+              <span className="text-3xl md:text-4xl font-bold text-white">
                 Mapplock
               </span>
             </div>
             
             {/* Loading spinner */}
-            <div className="relative w-16 h-16">
+            <div className="relative w-12 h-12">
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 border-4 border-white/20 border-t-white rounded-full"
+                className="absolute inset-0 border-3 border-white/20 border-t-white rounded-full"
               />
             </div>
-            
-            <p className="text-white/60 text-sm md:text-base">Loading experience...</p>
           </motion.div>
         </motion.div>
       )}
