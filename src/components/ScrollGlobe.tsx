@@ -93,6 +93,7 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
 
         const scene = new THREE.Scene();
         sceneRef.current = scene;
+        console.log('✓ Scene created');
         
         const camera = new THREE.PerspectiveCamera(
           45, 
@@ -101,6 +102,7 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
           1000
         );
         cameraRef.current = camera;
+        console.log('✓ Camera created');
         
         const renderer = new THREE.WebGLRenderer({ 
           antialias: true, 
@@ -112,6 +114,7 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
         renderer.setClearColor(0x000000, 1);
         rendererRef.current = renderer;
         container.appendChild(renderer.domElement);
+        console.log('✓ Renderer created and added to DOM');
 
         // Lighting - improved for better visibility
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -119,11 +122,15 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
         const light = new THREE.DirectionalLight(0xffffff, 1.0);
         light.position.set(5, 3, 5);
         scene.add(light);
+        console.log('✓ Lights added');
 
         // Earth
         const textureLoader = new THREE.TextureLoader();
         const earthTexture = textureLoader.load(
-          "https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg"
+          "https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg",
+          () => console.log('✓ Earth texture loaded successfully'),
+          undefined,
+          (error) => console.error('✗ Failed to load Earth texture:', error)
         );
         const earthGeo = new THREE.SphereGeometry(4, 64, 64);
         const earthMat = new THREE.MeshPhongMaterial({ map: earthTexture });
@@ -131,6 +138,7 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
         earth.rotation.y = 0; // Start at 0
         earthRef.current = earth;
         scene.add(earth);
+        console.log('✓ Earth mesh created and added to scene');
 
         // Stars - reduced count for mobile performance
         const starCount = window.innerWidth < 768 ? 8000 : 15000;
@@ -152,6 +160,7 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
         const stars = new THREE.Points(starGeometry, starMaterial);
         starsRef.current = stars; // Store reference for rotation
         scene.add(stars);
+        console.log('✓ Stars created and added to scene');
 
         // Create comets
         const createComet = () => {
@@ -205,6 +214,7 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
         for (let i = 0; i < 3; i++) {
           cometsRef.current.push(createComet());
         }
+        console.log('✓ Comets created');
 
         // Controls - OrbitControls is attached to THREE namespace
         const OrbitControls = THREE.OrbitControls || (window as any).THREE.OrbitControls;
@@ -219,10 +229,12 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controlsRef.current = controls;
+        console.log('✓ Controls created');
 
         // Initial camera position
         camera.position.set(0, 0, 20);
         camera.lookAt(0, 0, 0);
+        console.log('✓ Camera positioned at (0, 0, 20)');
 
         // Animation loop
         function animate() {
@@ -287,6 +299,7 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
           }
         }
         animate();
+        console.log('✓ Animation loop started - Earth should be visible now!');
 
         // Resize handler
         const handleResize = () => {
