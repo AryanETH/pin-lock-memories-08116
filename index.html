@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#000000" />
     <link rel="icon" href="/favicon.ico" />
+    
+    <!-- Preload critical assets for faster loading -->
+    <link rel="preload" href="/google play.png" as="image" />
+    <link rel="preload" href="/removed_background (12).png" as="image" />
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script" crossorigin="anonymous" />
+    <link rel="preload" href="https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg" as="image" crossorigin="anonymous" />
+    
     <!-- Preload Basis33 so landing text renders correctly -->
     <link href="https://fonts.cdnfonts.com/css/basis33" rel="stylesheet" />
+    
     <title>Mapplock</title>
   </head>
   <body>

@@ -22,27 +22,41 @@ export default function ScrollGlobe({ scrollProgress, isScrolling }: ScrollGlobe
   useEffect(() => {
     const loadScript = (src: string) =>
       new Promise<void>((resolve, reject) => {
-        // Check if script already exists
+        // Check if script already exists or is loading
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) {
-          resolve();
+          // If script is already loaded, resolve immediately
+          if ((existing as HTMLScriptElement).dataset.loaded === 'true') {
+            resolve();
+            return;
+          }
+          // If script is loading, wait for it
+          existing.addEventListener('load', () => resolve());
+          existing.addEventListener('error', () => reject());
           return;
         }
         const script = document.createElement("script");
         script.src = src;
-        script.onload = () => resolve();
+        script.onload = () => {
+          script.dataset.loaded = 'true';
+          resolve();
+        };
         script.onerror = () => reject();
         document.body.appendChild(script);
       });
 
     async function init() {
       try {
-        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js");
-        await loadScript("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js");
-
+        // Check if Three.js is already available
         const THREE = (window as any).THREE;
+        if (!THREE) {
+          await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js");
+          await loadScript("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js");
+        }
+
+        const ThreeJS = (window as any).THREE;
         const container = containerRef.current;
-        if (!container || !THREE) return;
+        if (!container || !ThreeJS) return;
 
         const scene = new THREE.Scene();
         sceneRef.current = scene;
