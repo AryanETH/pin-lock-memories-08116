@@ -565,7 +565,7 @@ export default function Index() {
               className="absolute top-4 md:top-8 left-4 md:left-8 flex items-center gap-2 md:gap-3"
             >
               <img 
-                src="/removed_background (12).png" 
+                src="/removed_background (18).png" 
                 alt="Mapplock Logo" 
                 className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-2xl"
               />
