@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.aitoyz.mapplock",
+      "sha256_cert_fingerprints": [
+        "3A:08:40:09:F0:C8:2C:DD:80:22:11:06:1B:A2:3C:C7:10:04:C7:DC:F2:41:0E:94:E6:BF:EE:99:64:79:B6:14"
+      ]
+    }
+  }
+]
