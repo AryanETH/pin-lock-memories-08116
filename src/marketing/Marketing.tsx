@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ChevronRight, Fingerprint, FolderLock, Image as ImageIcon, LockKeyhole, MapPin, Menu, Pause, Play, Plus, ShieldCheck, Smartphone, X } from 'lucide-react';
-import { product, screenshots } from './product';
+import { articles, product, screenshots } from './product';
 import { usePageSeo } from './seo';
 import './marketing.css';
 
@@ -17,7 +17,7 @@ function Logo() {
 function Header() {
   const [open, setOpen] = useState(false);
   return <header className="ml-header"><div className="ml-container ml-nav"><Logo /><nav id="main-navigation" className={open ? 'is-open' : ''} onClick={() => setOpen(false)} onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}>
-    <a href="/#features">Features</a><a href="/#how-it-works">How it works</a><a href="/#privacy">Privacy</a><a href="/#faq">FAQ</a>
+    <a href="/#features">Features</a><a href="/#how-it-works">How it works</a><a href="/blog">Blog</a><a href="/#privacy">Privacy</a><a href="/#faq">FAQ</a>
   </nav><div className="ml-nav-actions"><Download compact placement="navigation" /><button className="ml-menu" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button></div></div></header>;
 }
 
@@ -100,23 +100,60 @@ function FAQ() {
   return <section id="faq" className="ml-faq ml-container"><div><h2>FAQ</h2></div><div className="ml-faq-list">{faqs.map(([q, a]) => <details key={q}><summary>{q}<Plus size={19} /></summary><p>{a}</p></details>)}</div></section>;
 }
 
-function FinalCTA() { 
-  return <section className="ml-final ml-container"><h2>Ready to protect<br /><span>your privacy?</span></h2><Download placement="footer-cta" /></section>; 
+function FinalCTA() {
+  return <section className="ml-final ml-container"><h2>Ready to protect<br /><span>your privacy?</span></h2><div className="ml-final-actions"><Download placement="footer-cta" /><a className="ml-blog-button" href="/blog">Read the blog <ArrowUpRight size={18} /></a></div></section>;
 }
 
 function Footer() {
-  return <footer className="ml-footer ml-container"><div className="ml-footer-main"><div><Logo /><p>Made by AItoyz in Bhopal, India</p></div><div><h2>Product</h2><a href="/#features">Features</a><a href="/#how-it-works">How it works</a><a href="/#privacy">Privacy</a><a href="/#faq">FAQ</a></div><div><h2>Legal</h2><a href="/privacypolicy.html">Privacy Policy</a><a href="/terms.html">Terms of Use</a></div></div><div className="ml-footer-bottom"><span>© {new Date().getFullYear()} AItoyz</span></div></footer>;
+  return <footer className="ml-footer ml-container"><div className="ml-footer-main"><div><Logo /><p>Made by AItoyz in Bhopal, India</p></div><div><h2>Product</h2><a href="/#features">Features</a><a href="/#how-it-works">How it works</a><a href="/#privacy">Privacy</a><a href="/#faq">FAQ</a></div><div><h2>Resources</h2><a href="/blog">All Blogs</a><a href="/how-to-lock-apps-on-android">App Lock Guide</a><a href="/photo-vault">Photo Vault</a></div><div><h2>Legal</h2><a href="/privacypolicy.html">Privacy Policy</a><a href="/terms.html">Terms of Use</a></div></div><div className="ml-footer-bottom"><span>© {new Date().getFullYear()} AItoyz</span></div></footer>;
 }
 
 export function pageMetadata(path: string) {
+  if (path === '/blog') return {
+    title: 'Android Privacy & App Lock Blog | Mapplock',
+    description: 'Practical guides on Android app locks, private photo vaults, mobile privacy and Mapplock.',
+  };
+  const article = articles.find(item => `/${item.slug}` === path);
+  if (article) return {
+    title: `${article.title} | Mapplock`,
+    description: article.intro,
+  };
   return { 
     title: 'Mapplock: App Lock & Private Photo Vault for Android', 
     description: product.description 
   };
 }
 
+function BlogIndex() {
+  return <div className="ml-site"><Header /><main id="main-content" className="ml-container ml-resource"><a className="ml-breadcrumb" href="/">Home <ChevronRight size={13} /> Blog</a><p className="ml-eyebrow">MAPPLOCK PRIVACY GUIDES</p><h1>Android privacy, explained.</h1><p className="ml-article-intro">Practical guides for protecting selected apps, keeping personal photos private and using Mapplock with confidence.</p><div className="ml-blog-list">{articles.map(article => <a className="ml-blog-card" href={`/${article.slug}`} key={article.slug}><div><p className="ml-eyebrow">{article.category}</p><h2>{article.title}</h2><p>{article.intro}</p><span>Read guide <ChevronRight size={16} /></span></div>{article.image && <img src={`/screenshots/${article.image}.png`} alt="" loading="lazy" />}</a>)}</div></main><Footer /></div>;
+}
+
+function ArticlePage({ path }: { path: string }) {
+  const article = articles.find(item => `/${item.slug}` === path);
+  if (!article) return null;
+  const relatedArticles = article.related.map(slug => articles.find(item => item.slug === slug)).filter((item): item is NonNullable<typeof item> => Boolean(item));
+  return <div className="ml-site"><Header /><main id="main-content" className="ml-container ml-resource"><a className="ml-breadcrumb" href="/blog">Home <ChevronRight size={13} /> Blog <ChevronRight size={13} /> Guide</a><p className="ml-eyebrow">{article.category}</p><h1>{article.title}</h1><div className={`ml-article-layout ${article.image ? '' : 'no-image'}`}><article><p className="ml-article-intro">{article.intro}</p>{article.sections.map(section => <section key={section.title}><h2>{section.title}</h2><p>{section.text}</p>{section.steps && <ol>{section.steps.map(step => <li key={step}>{step}</li>)}</ol>}</section>)}</article>{article.image && <aside className="ml-article-image"><img src={`/screenshots/${article.image}.png`} alt="Mapplock app lock screen on Android" /><span>Mapplock App Lock for Android</span></aside>}</div>{relatedArticles.length > 0 && <aside className="ml-related"><p className="ml-eyebrow">KEEP READING</p>{relatedArticles.map(item => <a href={`/${item.slug}`} key={item.slug}>{item.title}<ChevronRight size={16} /></a>)}</aside>}<Download placement="article" /></main><Footer /></div>;
+}
+
 export default function Marketing({ path = '/' }: { path?: string }) {
   const metadata = pageMetadata(path);
-  usePageSeo(metadata.title, metadata.description, path);
+  const article = articles.find(item => `/${item.slug}` === path);
+  const schema = article ? {
+    '@type': 'Article',
+    headline: article.title,
+    description: article.intro,
+    mainEntityOfPage: new URL(path, window.location.origin).href,
+    author: { '@type': 'Organization', name: product.developer },
+    publisher: { '@type': 'Organization', name: product.developer },
+    about: ['Android app lock', 'mobile privacy', 'Mapplock'],
+  } : path === '/blog' ? {
+    '@type': 'CollectionPage',
+    name: 'Mapplock Android Privacy Blog',
+    description: metadata.description,
+    mainEntityOfPage: new URL(path, window.location.origin).href,
+  } : undefined;
+  usePageSeo(metadata.title, metadata.description, path, schema);
+  if (article) return <ArticlePage path={path} />;
+  if (path === '/blog') return <BlogIndex />;
   return <div className="ml-site"><Header /><main id="main-content"><Hero /><ScreenshotGallery /><HowItWorks /><Features /><Privacy /><FAQ /><FinalCTA /></main><Footer /></div>;
 }

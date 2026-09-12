@@ -4,11 +4,16 @@ import { product } from './product';
 function upsertMeta(name: string, content: string, property = false) {
   const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
   let element = document.head.querySelector<HTMLMetaElement>(selector);
-  if (!element) { element = document.createElement('meta'); property ? element.setAttribute('property', name) : element.setAttribute('name', name); document.head.appendChild(element); }
+  if (!element) {
+    element = document.createElement('meta');
+    if (property) element.setAttribute('property', name);
+    else element.setAttribute('name', name);
+    document.head.appendChild(element);
+  }
   element.content = content;
 }
 
-export function usePageSeo(title: string, description: string, path: string) {
+export function usePageSeo(title: string, description: string, path: string, pageSchema?: Record<string, unknown>) {
   useEffect(() => {
     document.title = title;
     upsertMeta('description', description);
@@ -22,6 +27,7 @@ export function usePageSeo(title: string, description: string, path: string) {
     data.text = JSON.stringify({ '@context': 'https://schema.org', '@graph': [
       { '@type': 'Organization', name: product.developer, url: product.developerUrl, email: product.supportEmail, address: { '@type': 'PostalAddress', addressLocality: 'Bhopal', addressCountry: 'IN' } },
       { '@type': 'SoftwareApplication', name: product.fullName, applicationCategory: 'SecurityApplication', operatingSystem: 'Android', description: product.description, downloadUrl: product.playUrl, author: { '@type': 'Organization', name: product.developer } },
+      ...(pageSchema ? [pageSchema] : []),
     ] });
-  }, [title, description, path]);
+  }, [title, description, path, pageSchema]);
 }
