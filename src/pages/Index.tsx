@@ -55,6 +55,7 @@ export default function Index() {
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   // Custom cursor tracking
   useEffect(() => {
@@ -574,7 +575,7 @@ export default function Index() {
               </span>
             </motion.div>
 
-            {/* Join Beta Waitlist at top right */}
+            {/* Download Mapplock at top right */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -587,14 +588,14 @@ export default function Index() {
                 <Button
                   size="sm"
                   onClick={() => {
-                    window.open('https://forms.gle/uZv5JwMBpkGsXjPUA', '_blank');
+                    window.open('https://play.google.com/store/apps/details?id=com.aitoyz.mapplock', '_blank');
                   }}
-                  className="relative bg-white hover:bg-gray-100 text-black font-bold px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm rounded-full shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white animate-border-pulse"
+                  className="relative bg-transparent hover:bg-white/10 text-white font-bold px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm rounded-full shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white animate-border-pulse"
                   style={{
                     animation: 'borderPulse 2s ease-in-out infinite'
                   }}
                 >
-                  Join Beta Waitlist
+                  Download Mapplock
                 </Button>
               </div>
             </motion.div>
@@ -656,68 +657,238 @@ export default function Index() {
             {/* CTA Button - visible at end */}
             {scrollProgress > 0.75 && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="pointer-events-auto px-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6 }}
+                className="pointer-events-auto w-full max-w-7xl mx-auto px-6 md:px-12"
               >
-                <div className="text-center flex flex-col items-center space-y-1 md:space-y-2">
-                  <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-tight px-2 text-center"
-                    style={{
-                      textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
-                    }}
-                  >
-                    World's first geo-lock
-                    <br />
-                    <span className="text-white">
-                      Lock geologically
-                    </span>
-                  </motion.h1>
-                  
-                  <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-white/90 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl max-w-2xl mx-auto px-4 text-center"
-                    style={{
-                      textShadow: '0 2px 10px rgba(0,0,0,0.8)'
-                    }}
-                  >
-                    Lock & secure your apps, photos, and files to real-world locations
-                  </motion.p>
+                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 lg:gap-4 w-full">
 
+                  {/* ── LEFT COLUMN ── */}
+                  <div className="flex flex-col items-start gap-5 max-w-lg w-full">
+
+                    {/* Pill badge */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm"
+                    >
+                      <svg className="w-3.5 h-3.5 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                      <span className="text-white/90 text-xs font-semibold tracking-widest uppercase">World's First Geo-Lock</span>
+                    </motion.div>
+
+                    {/* Headline */}
+                    <motion.h1
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl font-black text-white leading-[1.05] tracking-tight"
+                      style={{ textShadow: '0 4px 24px rgba(0,0,0,0.8)' }}
+                    >
+                      Your Secrets<br />
+                      Have a{' '}
+                      <span style={{ color: '#3B82F6' }}>Location</span>
+                    </motion.h1>
+
+                    {/* Subtitle */}
+                    <motion.p
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-white/70 text-base md:text-lg font-normal leading-relaxed max-w-sm"
+                      style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+                    >
+                      Lock apps, photos &amp; files behind a place only you know.
+                    </motion.p>
+
+                    {/* Download button */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex items-center gap-3"
+                    >
+                      <a
+                        href="https://play.google.com/store/apps/details?id=com.aitoyz.mapplock"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2.5 px-5 py-3 rounded-full font-bold text-white text-sm md:text-base transition-all duration-300 hover:scale-105 hover:brightness-110 shadow-xl"
+                        style={{ background: 'linear-gradient(90deg, #1a73e8 0%, #0ea5e9 100%)' }}
+                      >
+                        <img src="/google play.png" alt="" className="w-5 h-5 object-contain" />
+                        Download Mapplock
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                      </a>
+
+                      {/* Watch demo */}
+                      <button
+                        onClick={() => setVideoModalOpen(true)}
+                        className="group flex items-center justify-center w-11 h-11 rounded-full border border-white/30 bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-105"
+                        title="Watch Demo"
+                      >
+                        <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      </button>
+                    </motion.div>
+
+                    {/* Trust badges */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="flex items-center gap-4 flex-wrap"
+                    >
+                      {[
+                        { icon: '🏷️', label: 'Free' },
+                        { icon: '🚫', label: 'No Ads' },
+                        { icon: '🇮🇳', label: 'Made in Bhopal, India' },
+                      ].map((badge) => (
+                        <span key={badge.label} className="flex items-center gap-1.5 text-white/60 text-xs font-medium">
+                          <span>{badge.icon}</span>
+                          {badge.label}
+                        </span>
+                      ))}
+                    </motion.div>
+
+                    {/* Product Hunt badge */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      <a
+                        href="https://www.producthunt.com/products/mapplock?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mapplock"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-transform duration-300 hover:scale-105 inline-block"
+                      >
+                        <img
+                          alt="Mapplock on Product Hunt"
+                          width="200"
+                          height="43"
+                          src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1247900&theme=dark&t=1789152952469"
+                        />
+                      </a>
+                    </motion.div>
+                  </div>
+
+                  {/* ── RIGHT COLUMN — Phone mockup ── */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="flex flex-col items-center gap-2 md:gap-3 mt-3 md:mt-4"
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3, duration: 0.7 }}
+                    className="relative flex-shrink-0 hidden lg:block"
                   >
-                    <img 
-                      src="/google play.png" 
-                      alt="Google Play" 
-                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-64 md:h-64 lg:w-80 lg:h-80 object-contain drop-shadow-2xl"
-                    />
-                    <span className="text-white/80 text-base sm:text-lg md:text-2xl lg:text-3xl font-semibold tracking-wider">
-                      COMING SOON
-                    </span>
-                  </motion.div>
+                    {/* Handwritten annotation */}
+                    <div className="absolute -right-20 top-1/3 text-white/60 text-sm italic font-light text-center leading-tight" style={{ fontFamily: 'cursive', transform: 'rotate(8deg)' }}>
+                      Anywhere<br />can be your<br />lock
+                    </div>
 
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="text-white/60 text-xs sm:text-sm md:text-base px-4 text-center"
-                    style={{
-                      textShadow: '0 2px 8px rgba(0,0,0,0.8)'
-                    }}
-                  >
-                    Limited spots available • Early access coming soon
-                  </motion.p>
+                    {/* Phone frame */}
+                    <div className="relative w-56 md:w-64" style={{ filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.7))' }}>
+                      {/* Outer phone shell */}
+                      <div className="relative bg-gray-900 rounded-[2.5rem] border-4 border-gray-700 overflow-hidden" style={{ aspectRatio: '9/19' }}>
+                        {/* Status bar */}
+                        <div className="flex justify-between items-center px-4 pt-3 pb-1 bg-gray-900">
+                          <span className="text-white/80 text-[9px] font-semibold">9:41</span>
+                          <div className="flex items-center gap-1">
+                            <svg className="w-3 h-2 text-white" fill="currentColor" viewBox="0 0 24 16"><rect x="0" y="4" width="4" height="12" rx="1"/><rect x="6" y="2" width="4" height="14" rx="1"/><rect x="12" y="0" width="4" height="16" rx="1"/><rect x="18" y="0" width="4" height="16" rx="1" opacity="0.3"/></svg>
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.56 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                            <svg className="w-4 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 12"><rect x="0.5" y="0.5" width="20" height="11" rx="2" stroke="currentColor" strokeWidth="1" fill="none"/><rect x="2" y="2" width="14" height="8" rx="1"/><path d="M22 4v4a2 2 0 000-4z"/></svg>
+                          </div>
+                        </div>
+
+                        {/* App header */}
+                        <div className="flex items-center justify-between px-3 py-2 bg-gray-900">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            </div>
+                            <span className="text-white text-[10px] font-bold">Mapplock</span>
+                          </div>
+                          <div className="w-4" />
+                        </div>
+
+                        {/* Map area */}
+                        <div className="relative bg-[#1a2535] mx-2 rounded-xl overflow-hidden" style={{ height: '110px' }}>
+                          {/* Grid lines */}
+                          <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 60">
+                            <defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="#4FC3F7" strokeWidth="0.3"/></pattern></defs>
+                            <rect width="100" height="60" fill="url(#grid)"/>
+                          </svg>
+                          {/* Radius circle */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                            <div className="w-16 h-16 rounded-full border border-blue-400/40 bg-blue-500/10 flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-full border border-blue-400/60 bg-blue-500/20 flex items-center justify-center">
+                                <div className="w-5 h-5 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50 flex items-center justify-center">
+                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Tooltip */}
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-white rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg whitespace-nowrap">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            <span className="text-gray-800 text-[8px] font-semibold">Your secret place 🔒</span>
+                          </div>
+                        </div>
+
+                        {/* App grid */}
+                        <div className="grid grid-cols-2 gap-1.5 px-2 pt-2">
+                          {[
+                            { label: 'Apps', color: '#3B82F6', icon: (
+                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/></svg>
+                            )},
+                            { label: 'Photos', color: '#22C55E', icon: (
+                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                            )},
+                            { label: 'Audio', color: '#A855F7', icon: (
+                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                            )},
+                            { label: 'Files', color: '#F59E0B', icon: (
+                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                            )},
+                          ].map((item) => (
+                            <div key={item.label} className="flex flex-col items-center justify-center gap-1 rounded-xl py-2.5" style={{ background: item.color }}>
+                              {item.icon}
+                              <span className="text-white text-[9px] font-semibold">{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-center gap-1.5 mx-2 mt-1.5 mb-2 py-1.5 rounded-xl bg-gray-800/80">
+                          <svg className="w-3 h-3 text-white/60" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                          <span className="text-white/50 text-[8px] font-medium tracking-wider">Private. Local. Yours.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
                 </div>
+
+                {/* ── BOTTOM FEATURES BAR ── */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="mt-8 w-full grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-2xl overflow-hidden backdrop-blur-sm border border-white/10"
+                >
+                  {[
+                    { icon: '🛡️', title: 'App Lock', desc: 'Keep your apps private' },
+                    { icon: '🖼️', title: 'Photo Vault', desc: 'Hide your memories' },
+                    { icon: '📄', title: 'Files & Docs', desc: 'Secure what matters' },
+                    { icon: '📍', title: 'Map Based Access', desc: 'A place only you know' },
+                  ].map((feat) => (
+                    <div key={feat.title} className="flex items-center gap-3 px-4 py-4 bg-black/40">
+                      <span className="text-xl flex-shrink-0">{feat.icon}</span>
+                      <div>
+                        <p className="text-white font-semibold text-sm">{feat.title}</p>
+                        <p className="text-white/50 text-xs mt-0.5">{feat.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
               </motion.div>
             )}
           </div>
@@ -935,6 +1106,48 @@ export default function Index() {
         onSelectFact={handleSelectSavedFact}
         onDeleteFact={deleteSavedFact}
       />
+
+      {/* YouTube Video Modal */}
+      {videoModalOpen && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setVideoModalOpen(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+            className="relative w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setVideoModalOpen(false)}
+              className="absolute -top-10 right-0 text-white/80 hover:text-white transition-colors text-sm font-medium flex items-center gap-1.5"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Close
+            </button>
+
+            {/* Shorts aspect ratio 9:16 */}
+            <div
+              className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black"
+              style={{ paddingBottom: '177.78%' }}
+            >
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/hP4BwtZD59s?autoplay=1&rel=0&modestbranding=1"
+                title="Mapplock Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </motion.div>
+        </div>
+      )}
      
      </div>
   );
